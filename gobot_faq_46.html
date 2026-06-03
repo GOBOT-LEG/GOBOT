@@ -639,7 +639,8 @@ function showScreen(id) {
             window.ejecutadosData = data.map(r => ({
               c: r.c || '',
               d: r.d || '',
-              p: normalizarPlaca(r.p || '')
+              p: normalizarPlaca(r.p || ''),
+              f: r.f || ''
             })).filter(r => r.c);
             window.ejecutadosCargado = true;
             console.log('Ejecutados cargados desde Apps Script:', window.ejecutadosData.length);
