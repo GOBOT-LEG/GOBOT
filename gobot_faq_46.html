@@ -688,19 +688,24 @@ function showScreen(id) {
           catsMap[cat] = [];
           catOrder.push(cat);
         }
-        // Convertir texto plano a HTML simple
-        const aHtml = '<p>' + respuesta.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>') + '</p>' +
-          (notas ? notas.split('\n').map(n => `<p class="note">${n}</p>`).join('') : '');
+        // Usar el HTML ya procesado por Apps Script
+        const aHtml = respuesta + (notas ? notas : '');
         catsMap[cat].push({ q: pregunta, a: aHtml });
       });
 
       // Solo actualizar items de las categorías que vienen del Sheet
-      // Mantener configuración de iconos/colores del código original
       if (catOrder.length > 0) {
         CATS.forEach(cat => {
-          const key = Object.keys(catsMap).find(k => cat.title.toUpperCase().includes(k.split('—')[0].trim().toUpperCase()) || k.toUpperCase().includes(cat.title.toUpperCase().split('—')[0].trim()));
-          if (key && catsMap[key].length > 0) {
-            cat.items = catsMap[key];
+          // Buscar TODAS las claves que coincidan (para agrupar Lima + Provincia en notarías)
+          const matchingKeys = Object.keys(catsMap).filter(k => 
+            cat.title.toUpperCase().includes(k.split('—')[0].trim().toUpperCase()) || 
+            k.toUpperCase().includes(cat.title.toUpperCase().split('—')[0].trim()) ||
+            (cat.id === 'notarias' && (k.toUpperCase().includes('NOTARIA') || k.toUpperCase().includes('NOTAR')))
+          );
+          if (matchingKeys.length > 0) {
+            // Combinar todos los items de las claves que coincidan
+            const allItems = matchingKeys.reduce((acc, k) => acc.concat(catsMap[k]), []);
+            if (allItems.length > 0) cat.items = allItems;
           }
         });
         console.log('Procedimientos actualizados desde API');
