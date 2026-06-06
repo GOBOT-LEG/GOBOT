@@ -773,6 +773,8 @@ function showScreen(id) {
           if (matchingKeys.length > 0) {
             const allItems = matchingKeys.reduce((acc, k) => acc.concat(catsMap[k]), []);
             if (allItems.length > 0) cat.items = allItems;
+            // Actualizar el área según el Sheet
+            cat.area = (catAreaMap[matchingKeys[0]] || 'LEGAL').toLowerCase();
             matchingKeys.forEach(k => { delete catsMap[k]; });
           }
         });
