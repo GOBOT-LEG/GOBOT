@@ -423,13 +423,29 @@ main { max-width: 800px; margin: 0 auto; padding: 28px 24px; }
 <script>
 const AK = 'sk-ant-api03-a4bzMoMwwfv6vAVdCk0KNkYQ5Jx2VYvlix8gOrJSvWwrXj9c1V3rGX4ldDVdMFs7Vdmz1MqMkuq2f-HRl5MHw-892BcQAA';
 
-const AREAS = [
+const AREA_DEFAULTS = {
+  'LEGAL': { icon:'⚖️', color:'#0a3d8f', desc:'Procedimientos y consultas del área legal' },
+  'OPERACIONES': { icon:'📊', color:'#e67e22', desc:'Procesos operativos y logística' },
+  'COMERCIAL': { icon:'🤝', color:'#27ae60', desc:'Gestión comercial y ventas' },
+  'TESORERÍA': { icon:'💰', color:'#8e44ad', desc:'Pagos, cobranzas y finanzas' },
+  'AAC': { icon:'📋', color:'#e74c3c', desc:'Atención al cliente y coordinación' },
+  'DEFAULT': { icon:'📁', color:'#34495e', desc:'Procedimientos del área' }
+};
+
+let AREAS = [
   { id:'legal', name:'Legal', icon:'⚖️', color:'#0a3d8f', desc:'Procedimientos y consultas del área legal' }
-  // Futuro: { id:'operaciones', name:'Operaciones', icon:'📊', color:'#e67e22', desc:'Procesos operativos' }
-  // Futuro: { id:'comercial', name:'Comercial', icon:'🤝', color:'#27ae60', desc:'Gestión comercial y ventas' }
 ];
 
 const CATS = [
+  { id:"ejecutados", area:"legal", icon:"⚖️", title:"Clientes Ejecutados", color:"#d63031",
+    items:[
+      { q:"Buscar cliente ejecutado por nombre, DOI o placa",
+        a:`<p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Escribe el nombre, DOI o placa — los resultados aparecen automáticamente desde que escribes 3 caracteres.</p>
+<input type="text" id="ejec-inline-input" placeholder="Ej: Lopez, 73427852 o 0626-RC..."
+  style="width:100%;padding:12px 16px;border:2px solid #0a3d8f;border-radius:10px;font-size:14px;background:#fff;color:#0d1b2e;box-sizing:border-box;outline:none;" />
+<div id="ejec-inline-resultado" style="margin-top:12px;"></div>` }
+    ]
+  },
   { id:"tive", area:"legal", icon:"📋", title:"TIVE Observada", color:"#6c63ff",
     items:[
       { q:"Pareja casada — el cónyuge no figuró en la TIVE",
@@ -556,15 +572,6 @@ const CATS = [
 <p class="note">⚠️ La entrega SOLO se autoriza con la GM firmada y validada. El contrato solo no es suficiente.</p>` },
       { q:"Se entregó un vehículo distinto al declarado",
         a:`<div class="step"><div class="step-num">1</div><div class="step-text">Enviar boleta con datos del nuevo vehículo a <span class="tag tag-op">OPERACIONES</span>.</div></div><div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-op">OPERACIONES</span> Valida que el vehículo puede ser financiado y confirma si se debe modificar hoja informativa o cronograma.</div></div><div class="step"><div class="step-num">3</div><div class="step-text">Con modificación: <span class="tag tag-legal">LEGAL</span> envía adenda. Sin modificación: Operaciones solo cambia la boleta.</div></div><div class="step"><div class="step-num">4</div><div class="step-text">Si ya se firmó garantía con datos erróneos: pago de nueva legalización. Constancia a Legal y Tesorería. Tesorería valida. Legal modifica y coordina con notaría. AAC indica fecha.</div></div><hr class="divider"><div class="bullet"><strong>Provincia:</strong> Basta boleta nueva.</div><div class="bullet"><strong>Lima:</strong> Boleta nueva + TIVE con datos correctos.</div><div class="cost-box"><strong>💰</strong> Si ya se firmó GM: Lima S/120 · Provincia según notaría + S/4 SIGM. Si se reportó antes de la firma: sin costo.</div><p class="note">⚠️ Copiar: AAC, Operaciones, Legal y Tesorería. Si el error es del dealer: incluir Auditoría al Dealer.</p>` }
-    ]
-  },
-  { id:"ejecutados", area:"legal", icon:"⚖️", title:"Clientes Ejecutados", color:"#d63031",
-    items:[
-      { q:"Buscar cliente ejecutado por nombre, DOI o placa",
-        a:`<p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Escribe el nombre, DOI o placa — los resultados aparecen automáticamente desde que escribes 3 caracteres.</p>
-<input type="text" id="ejec-inline-input" placeholder="Ej: Lopez, 73427852 o 0626-RC..."
-  style="width:100%;padding:12px 16px;border:2px solid #0a3d8f;border-radius:10px;font-size:14px;background:#fff;color:#0d1b2e;box-sizing:border-box;outline:none;" />
-<div id="ejec-inline-resultado" style="margin-top:12px;"></div>` }
     ]
   },
   { id:"costos", area:"legal", icon:"💰", title:"Costos", color:"#00b894",
@@ -731,47 +738,90 @@ function showScreen(id) {
         try {
           if (!Array.isArray(rows) || rows.length === 0) throw new Error('Sin datos');
 
-      // Reconstruir CATS desde Apps Script
+      // Agrupar por área y categoría
       const catsMap = {};
       const catOrder = [];
+      const catAreaMap = {};
       rows.forEach(r => {
         const cat = (r.categoria || '').trim();
         const pregunta = (r.pregunta || '').trim();
         const respuesta = (r.respuesta || '').trim();
         const notas = (r.notas || '').trim();
+        const area = (r.area || 'LEGAL').trim().toUpperCase();
         if (!cat || !pregunta || !respuesta) return;
         if (!catsMap[cat]) {
           catsMap[cat] = [];
           catOrder.push(cat);
+          catAreaMap[cat] = area;
         }
-        // Usar el HTML ya procesado por Apps Script
         const aHtml = respuesta + (notas ? notas : '');
         catsMap[cat].push({ q: pregunta, a: aHtml });
       });
 
-      // Solo actualizar items de las categorías que vienen del Sheet
       if (catOrder.length > 0) {
+        // 1. Actualizar CATS existentes (Legal)
         CATS.forEach(cat => {
-          // Buscar TODAS las claves que coincidan (para agrupar Lima + Provincia en notarías)
           const aliasMap = { moto: ['ENTREGA DE LA MOTO','CAMBIO DE UNIDAD','PROBLEMAS CON LA MOTO'] };
           const aliases = aliasMap[cat.id] || [];
           const matchingKeys = Object.keys(catsMap).filter(k => {
-            const kUp = k.split('—')[0].trim().toUpperCase();
-            const tUp = cat.title.toUpperCase().split('—')[0].trim();
+            const kUp = k.split('\u2014')[0].trim().toUpperCase();
+            const tUp = cat.title.toUpperCase().split('\u2014')[0].trim();
             return tUp.includes(kUp) || kUp.includes(tUp) ||
               (cat.id === 'notarias' && (kUp.includes('NOTARIA') || kUp.includes('NOTAR'))) ||
               aliases.some(a => kUp.includes(a) || a.includes(kUp));
           });
           if (matchingKeys.length > 0) {
-            // Combinar todos los items de las claves que coincidan
             const allItems = matchingKeys.reduce((acc, k) => acc.concat(catsMap[k]), []);
             if (allItems.length > 0) cat.items = allItems;
+            matchingKeys.forEach(k => { delete catsMap[k]; });
           }
         });
+
+        // 2. Crear CATS nuevos para categorías no reconocidas (otras áreas)
+        const catColors = ['#6c63ff','#ff9f43','#e74c3c','#27ae60','#3498db','#8e44ad','#1abc9c','#e67e22'];
+        const catIcons = ['📋','📊','💼','🔧','📦','📞','🏢','📝'];
+        let colorIdx = 0;
+        Object.keys(catsMap).forEach(catName => {
+          if (catsMap[catName].length === 0) return;
+          const area = (catAreaMap[catName] || 'LEGAL').toLowerCase();
+          const catId = catName.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+          CATS.push({
+            id: catId,
+            area: area,
+            icon: catIcons[colorIdx % catIcons.length],
+            title: catName,
+            color: catColors[colorIdx % catColors.length],
+            items: catsMap[catName]
+          });
+          colorIdx++;
+        });
+
+        // 3. Construir AREAS dinámicamente
+        const areasSet = new Set();
+        CATS.forEach(c => areasSet.add((c.area || 'legal').toUpperCase()));
+        areasSet.forEach(areaName => {
+          const aId = areaName.toLowerCase();
+          if (!AREAS.find(a => a.id === aId)) {
+            const defaults = AREA_DEFAULTS[areaName] || AREA_DEFAULTS['DEFAULT'];
+            AREAS.push({
+              id: aId,
+              name: areaName.charAt(0) + areaName.slice(1).toLowerCase(),
+              icon: defaults.icon,
+              color: defaults.color,
+              desc: defaults.desc
+            });
+          }
+        });
+
         console.log('Procedimientos actualizados desde API');
+        console.log('Áreas:', AREAS.map(a => a.name).join(', '));
         // Reconstruir índice de búsqueda
         IDX.length = 0;
         CATS.forEach(c => c.items.forEach((it,i) => IDX.push({catId:c.id,catTitle:c.title,idx:i,q:it.q,kw:it.q.toLowerCase()})));
+        // Reconstruir pantalla de inicio
+        buildHome();
       }
     } catch(e) {
           console.warn('Procedimientos Apps Script falló:', e.message);
