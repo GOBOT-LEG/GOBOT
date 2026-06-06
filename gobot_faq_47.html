@@ -706,13 +706,11 @@ function showScreen(id) {
               f: r.f || ''
             })).filter(r => r.c);
             window.ejecutadosCargado = true;
-            window._ejecutadosAPIok = true;
+            window._ejOK = true;
             console.log('Ejecutados cargados desde Apps Script:', window.ejecutadosData.length);
-          } else throw new Error('Sin datos');
+          }
         } catch(e) {
           console.warn('Apps Script ejecutados falló:', e.message);
-          window.ejecutadosData = EJECUTADOS_DATA;
-          window.ejecutadosCargado = true;
         }
         document.getElementById(callbackName + '_script')?.remove();
         delete window[callbackName];
@@ -722,10 +720,9 @@ function showScreen(id) {
       script.id = callbackName + '_script';
       script.src = APPS_SCRIPT_URL + '?tipo=ejecutados&callback=' + callbackName + '&t=' + Date.now();
       script.onerror = () => {
-        if (window._ejecutadosAPIok) return resolve();
-        console.warn('Apps Script ejecutados: error de red, usando datos locales');
-        window.ejecutadosData = EJECUTADOS_DATA;
-        window.ejecutadosCargado = true;
+        if (!window._ejOK) {
+          console.warn('Apps Script ejecutados: usando datos locales');
+        }
         resolve();
       };
       document.head.appendChild(script);
