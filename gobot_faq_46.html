@@ -707,6 +707,7 @@ function showScreen(id) {
             })).filter(r => r.c);
             window.ejecutadosCargado = true;
             console.log('Ejecutados cargados desde Apps Script:', window.ejecutadosData.length);
+            console.log('DEBUG ejecutados[0]:', JSON.stringify(window.ejecutadosData[0]));
           } else throw new Error('Sin datos');
         } catch(e) {
           console.warn('Apps Script ejecutados falló:', e.message);
