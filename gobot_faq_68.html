@@ -827,7 +827,11 @@ function cargarProcedimientosAPI() {
 
 // Cargar todo al inicio
 window.addEventListener('load', async function() {
-  await Promise.all([cargarEjecutadosAPI(), cargarProcedimientosAPI()]);
+  const timeout = new Promise(resolve => setTimeout(() => resolve('timeout'), 5000));
+  const apiLoad = Promise.all([cargarEjecutadosAPI(), cargarProcedimientosAPI()]);
+  await Promise.race([apiLoad, timeout]);
+  buildHome();
+  showScreen('home');
 });
 
 
@@ -1493,7 +1497,8 @@ function openArea(areaId, push=true) {
   window.currentArea = areaId;
 }
 
-buildHome();
+// No renderizar hasta que el API cargue
+document.getElementById('screen-home').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text2);"><div class="loading-spinner" style="margin:0 auto 16px;"></div><p>Cargando procedimientos...</p></div>';
 showScreen('home');
 </script>
 </body>
