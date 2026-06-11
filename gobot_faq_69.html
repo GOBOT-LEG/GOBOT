@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-M5Y8HN0BS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-M5Y8HN0BS2');
+</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GO Bot — Procedimientos Internos</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #e8eef5;
+  --border: #c8d6e5;
+  --accent: #0a3d8f;
+  --accent2: #d42b2b;
+  --accent3: #1a6e3c;
+  --text: #0d1b2e;
+  --text2: #3a5070;
+  --text3: #6b88a8;
+  --font: 'Sora', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+header {
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: white;
+}
+.header-text h1 { font-size: 15px; font-weight: 600; }
+.header-text p { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.back-btn {
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  font-family: var(--font);
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(10,61,143,0.25);
+}
+.back-btn:hover { background: #083070; transform: translateY(-1px); }
+.back-btn:active { transform: scale(0.97); }
+.back-btn.visible { display: flex; }
+
+main { max-width: 800px; margin: 0 auto; padding: 28px 24px; }
+
+/* AI SEARCH */
+.ai-search-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 28px;
+}
+.ai-search-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--mono);
+  margin-bottom: 10px;
+}
+.ai-input-row {
+  display: flex;
+  gap: 10px;
+}
+.ai-input-row textarea {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  resize: none;
+  height: 42px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ai-input-row textarea:focus { border-color: var(--accent); }
+.ai-input-row textarea::placeholder { color: var(--text3); }
+.ai-send-btn {
+  padding: 0 18px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.ai-send-btn:hover { opacity: 0.85; }
+.ai-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ai-response {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  display: none;
+}
+.ai-response.visible { display: block; }
+.ai-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ai-suggestion:hover { background: var(--accent); color: white; }
+.ai-thinking { color: var(--text3); font-style: italic; font-size: 12px; }
+
+.screen { display: none; animation: fadeIn 0.25s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 16px;
+}
+
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.area-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.area-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--area-color, var(--accent));
+  opacity: 0.8;
+}
+.area-card:hover { border-color: var(--area-color, var(--accent)); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+.area-card-icon { font-size: 32px; margin-bottom: 12px; }
+.area-card-name { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.area-card-desc { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 12px; }
+.area-card-count { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.area-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 16px; padding: 4px 10px;
+  background: rgba(10,61,143,0.08); border-radius: 6px;
+}
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+.category-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.category-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--card-color, var(--accent));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.category-card:hover { border-color: var(--card-color, var(--accent)); transform: translateY(-2px); }
+.category-card:hover::before { opacity: 1; }
+.category-icon { font-size: 22px; margin-bottom: 8px; }
+.category-title { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; }
+.category-count { font-size: 10px; color: var(--text3); margin-top: 3px; font-family: var(--mono); }
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.category-header-icon { font-size: 26px; }
+.category-header-title { font-size: 17px; font-weight: 600; }
+
+.subcategory-list { display: flex; flex-direction: column; gap: 10px; }
+.subcategory-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.subcategory-btn:hover { border-color: var(--accent); background: var(--surface2); }
+.subcategory-btn .arrow { color: var(--text3); font-size: 16px; transition: transform 0.2s; }
+.subcategory-btn:hover .arrow { transform: translateX(4px); color: var(--accent); }
+
+.answer-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.answer-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--mono);
+  margin-bottom: 6px;
+}
+.answer-question { font-size: 15px; font-weight: 600; line-height: 1.4; }
+.answer-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  line-height: 1.8;
+  font-size: 13px;
+  color: var(--text);
+}
+.answer-content .step {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+.step-num {
+  width: 22px; height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-text { flex: 1; }
+.answer-content .bullet { margin-bottom: 8px; padding-left: 16px; position: relative; }
+.answer-content .bullet::before { content: '•'; position: absolute; left: 0; color: var(--accent); }
+.cost-box {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.cost-box strong { color: var(--accent3); }
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  margin-right: 4px;
+}
+.tag-legal { background: rgba(10,61,143,0.12); color: #0a3d8f; }
+.tag-comercial { background: rgba(212,43,43,0.12); color: #d42b2b; }
+.tag-op { background: rgba(26,110,60,0.12); color: #1a6e3c; }
+    .tag-dealer { background: rgba(100,60,180,0.12); color: #6438b0; font-weight:700; }
+.tag-aac { background: rgba(180,120,0,0.12); color: #8a6000; }
+.tag-teso { background: rgba(0,90,160,0.12); color: #005aa0; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.note { font-size: 11px; color: #3a5070; margin-top: 10px; font-style: italic; background: #fff3cd; border-left: 3px solid #e6a817; padding: 6px 10px; border-radius: 4px; }
+.pending { color: var(--text3); font-style: italic; font-size: 13px; }
+.etapa-btn {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.etapa-btn:hover { border-color: var(--accent); color: var(--text); background: var(--surface); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GO</div>
+  <div class="header-text">
+    <h1>GO Bot</h1>
+    <p>Procedimientos internos · Global Go</p>
+  </div>
+  <button class="back-btn" id="back-btn" onclick="goBack()">← Volver</button>
+</header>
+
+<main>
+  <!-- AI GUIDE -->
+  <div class="ai-search-box">
+    <div class="ai-search-label">✦ Asistente de búsqueda</div>
+    <div class="ai-input-row">
+      <textarea id="ai-input" placeholder="Describe tu consulta y te digo a dónde ir..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askAI();}"></textarea>
+      <button class="ai-send-btn" id="ai-btn" onclick="askAI()">Consultar</button>
+    </div>
+    <div class="ai-response" id="ai-response"></div>
+  </div>
+
+  <!-- SCREEN: HOME -->
+  <div class="screen active" id="screen-home">
+    <p class="section-title">Selecciona un área</p>
+    <div class="areas-grid" id="areas-grid"></div>
+  </div>
+
+
+  <!-- SCREEN: AREA -->
+  <div class="screen" id="screen-area">
+    <div class="area-badge" id="area-badge"></div>
+    <p class="section-title" id="area-section-title">Categorías</p>
+    <div class="categories-grid" id="area-categories-grid"></div>
+  </div>
+
+  <!-- SCREEN: SUB -->
+  <div class="screen" id="screen-sub">
+    <div class="category-header">
+      <div class="category-header-icon" id="sub-icon"></div>
+      <div class="category-header-title" id="sub-title"></div>
+    </div>
+    <div class="subcategory-list" id="subcategory-list"></div>
+  </div>
+
+  <!-- SCREEN: ANSWER -->
+  <div class="screen" id="screen-answer">
+    <div class="answer-header">
+      <div class="answer-label" id="answer-label"></div>
+      <div class="answer-question" id="answer-question"></div>
+    </div>
+    <div class="answer-content" id="answer-content"></div>
+  </div>
+
+  <!-- SCREEN: EJECUTADOS -->
+  <div class="screen" id="screen-ejecutados">
+    <div class="answer-header">
+      <div class="answer-label" style="color:#d42b2b;">⚖️ CLIENTES EJECUTADOS</div>
+      <div class="answer-question">Buscar cliente ejecutado</div>
+    </div>
+    <div class="answer-content">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Ingresa el nombre, DOI o placa del cliente. No necesitas escribirlo completo.</p>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">Formato de placa: <strong>1234-AB</strong> (4 números, guión, 2 letras).</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <input type="text" id="exec-input" placeholder="Ej: Lopez, 45123456 o 5794-CD..."
+          style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);box-sizing:border-box;outline:none;" />
+        <button id="exec-btn" style="padding:10px 18px;background:#0a3d8f;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;">Buscar</button>
+      </div>
+      <div id="exec-resultado"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const AK = 'sk-ant-api03-a4bzMoMwwfv6vAVdCk0KNkYQ5Jx2VYvlix8gOrJSvWwrXj9c1V3rGX4ldDVdMFs7Vdmz1MqMkuq2f-HRl5MHw-892BcQAA';
+
+const AREA_DEFAULTS = {
+  'LEGAL': { icon:'⚖️', color:'#0a3d8f', desc:'Procedimientos y consultas del área legal' },
+  'OPERACIONES': { icon:'📊', color:'#e67e22', desc:'Procesos operativos y logística' },
+  'COMERCIAL': { icon:'🤝', color:'#27ae60', desc:'Gestión comercial y ventas' },
+  'TESORERÍA': { icon:'💰', color:'#8e44ad', desc:'Pagos, cobranzas y finanzas' },
+  'AAC': { icon:'📋', color:'#e74c3c', desc:'Atención al cliente y coordinación' },
+  'DEFAULT': { icon:'📁', color:'#34495e', desc:'Procedimientos del área' }
+};
+
+let AREAS = [
+  { id:'legal', name:'Legal', icon:'⚖️', color:'#0a3d8f', desc:'Procedimientos y consultas del área legal' }
+];
+
+const CATS = [
+  { id:"ejecutados", area:"legal", icon:"⚖️", title:"Clientes Ejecutados", color:"#d63031",
+    items:[
+      { q:"Buscar cliente ejecutado por nombre, DOI o placa",
+        a:`<p style="font-size:13px;color:var(--text2);margin-bottom:4px;">Solo muestra clientes con garantía <strong>INSCRITA</strong> (autorizados para recuperación).</p>
+<p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Escribe el nombre, DOI o placa — los resultados aparecen automáticamente desde que escribes 3 caracteres.</p>
+<input type="text" id="ejec-inline-input" placeholder="Ej: Lopez, 73427852 o 0626-RC..."
+  style="width:100%;padding:12px 16px;border:2px solid #0a3d8f;border-radius:10px;font-size:14px;background:#fff;color:#0d1b2e;box-sizing:border-box;outline:none;" />
+<div id="ejec-inline-resultado" style="margin-top:12px;"></div>` }
+    ]
+  },
+  { id:"motos_venta", area:"legal", icon:"🏍️", title:"Motos Disponibles para Venta", color:"#e17055",
+    items:[
+      { q:"Buscar moto disponible por nombre, DOI o placa",
+        a:`<p style="font-size:13px;color:var(--text2);margin-bottom:4px;">Muestra motos <strong>LIMA</strong> con garantía <strong>INSCRITA</strong> o <strong>EN CALIFICACIÓN</strong>.</p>
+<p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Escribe el nombre, DOI o placa — los resultados aparecen automáticamente desde que escribes 3 caracteres.</p>
+<input type="text" id="motos-inline-input" placeholder="Ej: Lopez, 73427852 o 0626-RC..."
+  style="width:100%;padding:12px 16px;border:2px solid #e17055;border-radius:10px;font-size:14px;background:#fff;color:#0d1b2e;box-sizing:border-box;outline:none;" />
+<div id="motos-inline-resultado" style="margin-top:12px;"></div>` }
+    ]
+  },
+  { id:"tive", area:"legal", icon:"📋", title:"TIVE Observada", color:"#6c63ff",
+    items:[
+      { q:"Pareja casada — el cónyuge no figuró en la TIVE",
+        a:`<p>Error del registrador. Ambos ya figuran en el crédito (SIS360). <strong>Operaciones NO interviene.</strong> Nunca se retira al cónyuge del crédito por ley.</p><hr class="divider"><p><strong>Comercial consulta al cliente qué opción prefiere:</strong></p><div class="step"><div class="step-num">A</div><div class="step-text"><span class="tag tag-dealer">DEALER</span> Solicita rectificación en SUNARP adjuntando partida de matrimonio emitida por RENIEC. Sin costo de nueva GM. El plazo depende de SUNARP, Global Go no tiene responsabilidad.</div></div><div class="step"><div class="step-num">B</div><div class="step-text">Se firman <strong>DOS garantías mobiliarias</strong> — una con quien figura en la TIVE y otra con ambos cónyuges. Siempre hay costo por la segunda GM.</div></div><div class="cost-box"><strong>💰 Costo opción B:</strong> Lima S/120 · Provincia: según notaría local + S/4 SIGM · Lo asume dealer o cliente.</div>` },
+      { q:"Cliente soltero en DNI pero en la TIVE apareció su cónyuge",
+        a:`<p>SUNARP detectó que el cliente en realidad está casado. Legal no podía saberlo. Nunca se retira al cónyuge del crédito por ley.</p><hr class="divider"><div class="step"><div class="step-num">1</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Envía acta de matrimonio a Legal (emitida o certificada por RENIEC, no se aceptan documentos de municipalidad) solicitando evaluación.</div></div><div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Verifica y le indica a Operaciones cómo agregar al cónyuge en SIS360.</div></div><div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-op">OPERACIONES</span> Modifica el crédito en SIS360.</div></div><div class="step"><div class="step-num">4</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Elabora adenda para regularizar estado civil. Firman ambos vía Firmalo.pe o Keynua.</div></div><div class="step"><div class="step-num">5</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Persigue al cliente y cónyuge para que firmen la adenda.</div></div><div class="step"><div class="step-num">6</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Valida firma y solicita a AAC agendar cita de GM donde figuren ambos.</div></div><div class="step"><div class="step-num">7</div><div class="step-text"><span class="tag tag-aac">AAC</span> Agenda la cita de garantía.</div></div><div class="cost-box"><strong>💰 Costo:</strong> Si aún no se firmó GM: sin costo · Si ya se firmó: Lima S/120 · Provincia: según notaría + S/4 SIGM · Adenda sin costo.</div>` },
+      { q:"Dos copropietarios solteros/divorciados/viudos — solo uno figuró en la TIVE",
+        a:`<p>Comercial consulta al cliente qué opción prefiere:</p><div class="step"><div class="step-num">A</div><div class="step-text">Rectificación en SUNARP para que figuren ambos. Solo posible si en la boleta de venta figuran ambas personas. El plazo depende de SUNARP, Global Go no tiene responsabilidad.</div></div><div class="step"><div class="step-num">B</div><div class="step-text"><strong>(Más común)</strong> <span class="tag tag-comercial">COMERCIAL</span> solicita a Operaciones el retiro en SIS360 de quien no figuró. Luego: <span class="tag tag-op">OPERACIONES</span> modifica → <span class="tag tag-legal">LEGAL</span> elabora adenda → <span class="tag tag-comercial">COMERCIAL</span> persigue firma → <span class="tag tag-aac">AAC</span> agenda nueva cita de GM si ya se había firmado una.</div></div><div class="cost-box"><strong>💰 Costo:</strong> Si aún no se firmó GM: sin costo · Si ya se firmó: Lima S/120 · Provincia: según notaría + S/4 SIGM · Adenda sin costo.</div><p class="note">⚠️ Divorciado: acta de matrimonio (divorcio en el reverso). Viudo: acta de matrimonio + acta de defunción. Solo documentos emitidos por RENIEC.</p>` },
+      { q:"Cliente declaró estar casado pero son convivientes — SUNARP inscribió la TIVE solo a nombre de uno",
+        a:`<p>SUNARP detectó que en verdad no están casados entre sí. Se retira a quien no figuró.</p><hr class="divider"><p><strong>Comercial consulta al cliente qué opción prefiere:</strong></p><div class="step"><div class="step-num">A</div><div class="step-text"><strong>Rectificación de TIVE en SUNARP</strong> — solo si en la boleta de pago figuran ambos copropietarios: <span class="tag tag-dealer">DEALER</span> solicita la rectificación en SUNARP. Sin costo de nueva GM. El plazo depende de SUNARP, Global Go no tiene responsabilidad.</div></div><div class="step"><div class="step-num">B</div><div class="step-text"><strong>Retiro del que no figuró:</strong></div></div><div class="step"><div class="step-num">1</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Solicita a Operaciones el retiro en SIS360 de quien no figuró.</div></div><div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-op">OPERACIONES</span> Modifica el crédito en SIS360.</div></div><div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Elabora adenda y la envía a <strong>Firmalo.pe o Keynua</strong> para firma.</div></div><div class="step"><div class="step-num">4</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Persigue la firma del cliente.</div></div><div class="step"><div class="step-num">5</div><div class="step-text"><span class="tag tag-aac">AAC</span> Agenda nueva cita de GM si ya se había firmado una.</div></div><div class="cost-box"><strong>💰 Costo:</strong> Si aún no se firmó GM: sin costo · Si ya se firmó: Lima S/120 · Provincia: según notaría + S/4 SIGM · Adenda sin costo.</div>` },
+      { q:"Cliente con separación de patrimonios — el cónyuge apareció en la TIVE",
+        a:`<p>Comercial consulta al cliente qué opción prefiere:</p><div class="step"><div class="step-num">A</div><div class="step-text">Dealer solicita rectificación en SUNARP adjuntando partida de separación de patrimonios. El plazo depende de SUNARP, Global Go no tiene responsabilidad.</div></div><div class="step"><div class="step-num">B</div><div class="step-text">Se incluye al cónyuge en todo: <span class="tag tag-op">OPERACIONES</span> lo agrega en SIS360 → <span class="tag tag-legal">LEGAL</span> elabora adenda y la envía a <strong>Firmalo.pe o Keynua</strong> para firma → <span class="tag tag-comercial">COMERCIAL</span> persigue firmas → <span class="tag tag-aac">AAC</span> agenda nueva cita de GM.</div></div><div class="cost-box"><strong>💰 Costo:</strong> Si aún no se firmó GM: sin costo · Si ya se firmó: Lima S/120 · Provincia: según notaría + S/4 SIGM · Adenda sin costo.</div>` }
+    ]
+  },
+  { id:"agregar", area:"legal", icon:"👥", title:"Agregar o Quitar Alguien al Crédito", color:"#ff6584",
+    items:[
+      { q:"¿Cuándo se puede retirar a alguien del crédito?",
+        a:`<p><strong>Regla absoluta:</strong> Si los clientes son casados, JAMÁS se retira a ninguno del crédito por ley.</p><hr class="divider"><p>El retiro en SIS360 SOLO aplica para:</p><div class="bullet">Copropietarios solteros</div><div class="bullet">Divorciados — acreditar con acta de matrimonio (el divorcio figura en el reverso), emitida por RENIEC</div><div class="bullet">Viudos — acreditar con acta de matrimonio + acta de defunción, ambos emitidos por RENIEC</div><hr class="divider"><p><span class="tag tag-comercial">COMERCIAL</span> presenta los documentos a Legal para verificación antes de proceder.</p>` },
+      { q:"¿Cómo se agrega a alguien al crédito?",
+        a:`<div class="step"><div class="step-num">1</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Envía a Legal el acta de matrimonio (si son casados) o documentos que acrediten la relación, emitidos por RENIEC. Solicita evaluación de cómo agregar a esa persona.</div></div><div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Analiza si los documentos adjuntados (acta de matrimonio u otros) son válidos. Si lo son, da luz verde a Operaciones para que agregue o quite a la persona en SIS360.</div></div><div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-op">OPERACIONES</span> Agrega a la persona en SIS360.</div></div><div class="step"><div class="step-num">4</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Elabora adenda al contrato. Firman ambos vía Firmalo.pe o Keynua.</div></div><div class="step"><div class="step-num">5</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Persigue las firmas.</div></div><div class="step"><div class="step-num">6</div><div class="step-text"><span class="tag tag-aac">AAC</span> Agenda cita de GM una vez Legal lo solicite.</div></div><p class="note">Solo se aceptan documentos emitidos o certificados por RENIEC. Nunca documentos de municipalidad.</p>` }
+    ]
+  },
+  { id:"dni", area:"legal", icon:"🪪", title:"Problemas con DNI o CE", color:"#43e97b",
+    items:[
+      { q:"DNI vencido — ¿puede firmar?",
+        a:`<p>Con DOI vencido aplican reglas distintas según el tipo de documento y si es para garantía o contrato/adenda.</p>
+<hr class="divider">
+<p><strong>🔏 FIRMA DE GARANTÍA con DOI vencido:</strong></p>
+<div class="bullet"><strong>Peruanos — Lima (DNI vencido):</strong> Se acepta siempre que el cliente pase biométrico. Sin costo adicional.</div>
+<div class="bullet"><strong>Peruanos — Provincia (DNI vencido):</strong> <span class="tag tag-comercial">COMERCIAL</span> notifica por el grupo de WhatsApp de la región correspondiente para consultar si la notaría lo acepta, si hay algún costo extra o documento adicional que llevar. Esperar respuesta antes de agendar la cita.</div>
+<div class="bullet"><strong>Extranjeros — Lima y Provincia (CE vencido):</strong> Debe sacar nuevo CE vigente sí o sí, sin excepción. No hay alternativa.</div>
+<hr class="divider">
+<p><strong>📄 FIRMA DE CONTRATO O ADENDA con DOI vencido:</strong></p>
+<div class="bullet"><strong>Peruanos — Lima (DNI vencido):</strong> Se acepta siempre que el cliente pase biométrico. Costo S/120 a COOPAC.</div>
+<div class="bullet"><strong>Peruanos — Provincia (DNI vencido):</strong> Consultar primero con Legal antes de proceder.</div>
+<div class="bullet"><strong>Extranjeros (CE vencido):</strong> Debe sacar nuevo CE vigente sí o sí.</div>
+<hr class="divider">
+<p><strong>Flujo firma presencial de contrato o adenda — solo si Legal confirma que procede:</strong></p>
+<div class="step"><div class="step-num">1</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Envía correo a Legal, AAC y Tesorería describiendo el motivo y adjunta el voucher de pago.</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-teso">TESORERÍA</span> Valida el pago primero.</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-aac">AAC</span> Agenda la cita y <span class="tag tag-legal">LEGAL</span> coordina con la notaría una vez validado el pago.</div></div>
+<p class="note">⚠️ Solo Legal habla con las notarías. El cliente nunca se contacta directamente.</p>
+<p class="note">⚠️ Firma de contrato ≠ Firma de GM. La entrega de la moto SOLO se autoriza con la GM firmada.</p>` },
+      { q:"DNI deteriorado o roto — ¿puede firmar?",
+        a:`<p>Con DNI o CE deteriorado, <strong>primero intentar firma digital</strong> por Firmalo.pe o Keynua (a veces lo aceptan igual).</p>
+<hr class="divider">
+<div class="bullet">Si funciona en plataforma digital: continúa el proceso normal.</div>
+<div class="bullet">Si no funciona: proceder con firma presencial según el caso.</div>
+<hr class="divider">
+<p><strong>🔏 FIRMA DE GARANTÍA con DOI deteriorado/roto:</strong></p>
+<div class="bullet"><strong>Lima (DNI o CE deteriorado):</strong> Se acepta siempre que el cliente pase biométrico. Sin costo adicional.</div>
+<div class="bullet"><strong>Provincia (DNI o CE deteriorado):</strong> <span class="tag tag-comercial">COMERCIAL</span> notifica por el grupo de WhatsApp de la región correspondiente para consultar si la notaría lo acepta, si hay algún costo extra o documento adicional que llevar. Esperar respuesta antes de agendar la cita.</div>
+<hr class="divider">
+<p><strong>📄 FIRMA DE CONTRATO O ADENDA con DOI deteriorado/roto:</strong></p>
+<div class="bullet"><strong>Lima (DNI o CE deteriorado):</strong> Se acepta siempre que el cliente pase biométrico. Costo S/120 a COOPAC.</div>
+<div class="bullet"><strong>Provincia:</strong> Consultar primero con Legal antes de proceder.</div>
+<hr class="divider">
+<p><strong>Flujo firma presencial de contrato o adenda — solo si Legal confirma que procede:</strong></p>
+<div class="step"><div class="step-num">1</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Envía correo a Legal, AAC y Tesorería describiendo el motivo y adjunta el voucher de pago.</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-teso">TESORERÍA</span> Valida el pago primero.</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-aac">AAC</span> Agenda la cita y <span class="tag tag-legal">LEGAL</span> coordina con la notaría una vez validado el pago.</div></div>
+<p class="note">⚠️ Solo Legal habla con las notarías. El cliente nunca se contacta directamente.</p>
+<p class="note">⚠️ Costo S/120 a COOPAC para contrato o adenda. La GM no tiene costo adicional para el cliente.</p>` },
+      { q:"DNI perdido o extraviado — ¿puede firmar?",
+        a:`<p>Con DNI o CE perdido o robado, directamente <strong>firma presencial</strong>. No intentar plataforma digital.</p>
+<hr class="divider">
+<p><strong>🔏 FIRMA DE GARANTÍA con DOI perdido/robado:</strong></p>
+<div class="bullet"><strong>Lima:</strong> Legal envía al notario la foto del DOI del cliente subido al sistema para que proceda la identificación. Se acepta siempre que el cliente pase biométrico. Sin costo adicional.</div>
+<div class="bullet"><strong>Provincia:</strong> <span class="tag tag-comercial">COMERCIAL</span> notifica por el grupo de WhatsApp de la región correspondiente para consultar si la notaría lo acepta, si hay algún costo extra o documento adicional. Esperar respuesta antes de agendar la cita.</div>
+<hr class="divider">
+<p><strong>📄 FIRMA DE CONTRATO O ADENDA con DOI perdido/robado:</strong></p>
+<div class="bullet"><strong>Lima:</strong> Legal envía al notario la foto del DOI del cliente subido al sistema. Se acepta siempre que pase biométrico. Costo S/120 a COOPAC.</div>
+<div class="bullet"><strong>Provincia:</strong> Consultar primero con Legal antes de proceder.</div>
+<hr class="divider">
+<p><strong>Flujo firma presencial de contrato o adenda — solo si Legal confirma que procede:</strong></p>
+<div class="step"><div class="step-num">1</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Envía correo a Legal, AAC y Tesorería indicando que el DNI/CE está perdido o robado, y adjunta el voucher de pago.</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-teso">TESORERÍA</span> Valida el pago primero.</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Envía al notario la foto del DOI del cliente subido al sistema y coordina la cita.</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text"><span class="tag tag-aac">AAC</span> Agenda la cita una vez Legal confirme.</div></div>
+<p class="note">⚠️ Solo Legal habla con las notarías. El cliente nunca se contacta directamente.</p>
+<p class="note">⚠️ Firma de contrato ≠ Firma de GM. La entrega de la moto SOLO se autoriza con la GM firmada.</p>` }
+    ]
+  },
+  { id:"cronograma", area:"legal", icon:"📊", title:"Cronograma Errado / SOAT", color:"#ffc850",
+    items:[
+      { q:"El cliente indica que su cronograma tiene errores",
+        a:`<p>Derivar la consulta a <span class="tag tag-op">OPERACIONES</span> para que verifiquen si hay error real.</p>
+<p class="note">⚠️ Legal no puede modificar el cronograma ni la hoja informativa, eso solo lo hace Operaciones.</p>
+<hr class="divider">
+<p><strong>Si Operaciones confirma que NO hay error:</strong></p>
+<div class="bullet"><span class="tag tag-comercial">COMERCIAL</span> aclara al cliente que el cronograma es correcto y debe firmarlo tal como está.</div>
+<hr class="divider">
+<p><strong>Si Operaciones confirma que SÍ hay error — según etapa:</strong></p>
+<div class="bullet"><strong>El cliente AÚN NO firmó el contrato:</strong> Operaciones corrige la información. Legal reenvía el contrato por Firmalo.pe o Keynua para que el cliente lo firme. Sin adenda.</div>
+<div class="bullet"><strong>Ya firmó contrato, pero NO ha firmado la GM:</strong> Operaciones notifica cambios a Legal. Legal elabora adenda y la envía por Firmalo.pe o Keynua. Cliente firma. No se necesita nueva GM.</div>
+<div class="bullet"><strong>Ya firmó contrato Y ya firmó GM:</strong> Operaciones notifica cambios a Legal. Legal elabora adenda, cliente firma. Legal solicita a <span class="tag tag-aac">AAC</span> nueva cita de firma de GM (el cronograma con fechas figura en la garantía).</div>` },
+      { q:"El SOAT no figura en el contrato",
+        a:`<p>El SOAT lo maneja <span class="tag tag-op">OPERACIONES</span>. Legal NO puede modificar cronograma ni hoja informativa. Derivar la consulta a Operaciones.</p><hr class="divider"><div class="bullet"><strong>Antes de cualquier firma:</strong> Operaciones hace el cambio, sin costo.</div><div class="bullet"><strong>Ya se firmó contrato y/o garantía:</strong> El cliente deberá firmar documentos nuevos.</div><div class="bullet"><strong>Operaciones confirma que no hay modificación:</strong> El cliente continúa sin problemas.</div><div class="bullet"><strong>Ya firmó contrato pero NO la GM:</strong> Solo adenda, no nueva legalización.</div><div class="cost-box"><strong>💰</strong> Si el error es del cliente/dealer, ellos asumen el costo. Adenda sin costo.</div>` }
+    ]
+  },
+  { id:"contrato", area:"legal", icon:"✍️", title:"Seguimiento de Contratos / GO TRACK", color:"#50c8ff",
+    items:[
+      { q:"¿Por qué el cliente no puede firmar por Firmalo.pe o Keynua?",
+        a:`<p>Puede no estar disponible por:</p><div class="bullet">Restricciones del sistema.</div><div class="bullet">Problemas de validación de identidad del cliente.</div><div class="bullet">El tipo de documento requiere firma presencial.</div><hr class="divider"><p>Verificar con <span class="tag tag-op">OPERACIONES</span> el motivo específico.</p><p class="note">⚠️ Solo Legal habla con las notarías.</p>` },
+      { q:"Mi cliente desea desistir del crédito luego de firmar el contrato",
+        a:`<p>El cliente puede desistir, pero corresponde el pago del <strong>50% de la inicial</strong>.</p><hr class="divider"><p>Regulado en la <strong>cláusula de desistimiento / rescisión</strong> de las condiciones generales del contrato de crédito.</p>` }
+    ]
+  },
+  { id:"moto", area:"legal", icon:"🏍️", title:"Problemas con la Moto", color:"#ff9f43",
+    items:[
+      { q:"¿Cuándo se autoriza la entrega de la moto?",
+        a:`<p>La autorización de entrega la da <strong>Legal</strong> colocando un comentario en el <strong>SIS360</strong>. No basta con que el cliente diga que ya firmó — Legal requiere la validación de la notaría, ya que solo el personal notarial sabe si el cliente pasó biométrico correctamente, si firmó todas las páginas requeridas y si la firma es conforme a su DOI. El cliente no tiene visibilidad de todo eso.</p>
+<hr class="divider">
+<p><strong>🏙️ Lima:</strong></p>
+<div class="bullet">Legal inscribe la GM en el <strong>SIGM (Sistema Informativo de Garantías Mobiliarias)</strong> — página de SUNARP — dentro de las <strong>24 horas</strong> de realizada la firma del cliente en la notaría (Ate, Surquillo o Comas). Una vez inscrita, Legal coloca en el SIS360 el comentario: <em>"GARANTIA PRESENTADA A REGISTROS PÚBLICOS. ENTREGAR MOTO"</em>.</div>
+<div class="bullet">Si el SIGM falla (página de SUNARP caída), se avisará por los canales de WhatsApp. El plazo se puede extender hasta que se resuelva, pero no depende de Legal.</div>
+<hr class="divider">
+<p><strong>🗺️ Provincia:</strong></p>
+<div class="bullet">La notaría de provincia debe confirmar a Legal que la firma del cliente fue válida. Apenas Legal recibe esa confirmación, coloca en el SIS360 el comentario: <em>"GARANTIA FIRMADA / ENTREGAR MOTO"</em> y se debe enviar: <strong>Acta de Entrega de Moto, TIVE y Acta de Entrega de Placa</strong>.</div>
+<div class="bullet">Se pide paciencia, ya que cada notaría en provincia trabaja a un ritmo distinto.</div>
+<hr class="divider">
+<p class="note">⚠️ Solo Legal se comunica con las notarías de provincia. Los asesores comerciales no deben contactar ni presionar al personal notarial — eso genera malestar con la notaría. De preferencia, los asesores tampoco deben estar presentes en la notaría.</p>
+<p class="note">⚠️ No basta con que el cliente diga que ya firmó. Se requiere la validación de la notaría. Solo el personal notarial puede confirmar si el cliente pasó biométrico correctamente, firmó todas las páginas requeridas y si la firma es conforme a su DOI — el cliente no tiene visibilidad de nada de eso.</p>
+<p class="note">⚠️ La entrega SOLO se autoriza con la GM firmada y validada. El contrato solo no es suficiente.</p>` },
+      { q:"Se entregó un vehículo distinto al declarado",
+        a:`<div class="step"><div class="step-num">1</div><div class="step-text">Enviar boleta con datos del nuevo vehículo a <span class="tag tag-op">OPERACIONES</span>.</div></div><div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-op">OPERACIONES</span> Valida que el vehículo puede ser financiado y confirma si se debe modificar hoja informativa o cronograma.</div></div><div class="step"><div class="step-num">3</div><div class="step-text">Con modificación: <span class="tag tag-legal">LEGAL</span> envía adenda. Sin modificación: Operaciones solo cambia la boleta.</div></div><div class="step"><div class="step-num">4</div><div class="step-text">Si ya se firmó garantía con datos erróneos: pago de nueva legalización. Constancia a Legal y Tesorería. Tesorería valida. Legal modifica y coordina con notaría. AAC indica fecha.</div></div><hr class="divider"><div class="bullet"><strong>Provincia:</strong> Basta boleta nueva.</div><div class="bullet"><strong>Lima:</strong> Boleta nueva + TIVE con datos correctos.</div><div class="cost-box"><strong>💰</strong> Si ya se firmó GM: Lima S/120 · Provincia según notaría + S/4 SIGM. Si se reportó antes de la firma: sin costo.</div><p class="note">⚠️ Copiar: AAC, Operaciones, Legal y Tesorería. Si el error es del dealer: incluir Auditoría al Dealer.</p>` }
+    ]
+  },
+  { id:"costos", area:"legal", icon:"💰", title:"Costos", color:"#00b894",
+    items:[
+      { q:"¿Cuánto cuesta la firma presencial o nueva legalización?",
+        a:`<p>Hemos estandarizado el costo para todos los procesos donde se ha tenido que recurrir a firma presencial o nueva legalización, ya sea por error del dealer o del cliente.</p>
+<hr class="divider">
+<div class="bullet"><strong>Lima y Provincia — S/120</strong> para: firma de contrato presencial, nueva legalización de garantía y firma de adenda presencial.</div>
+<hr class="divider">
+<p><strong>Datos de pago:</strong></p>
+<div class="bullet"><strong>Lima y Provincia:</strong> Depósito a COOPAC · Interbank: 2003008200279 · CCI: 00320000300820027938</div>
+<div class="bullet"><strong>Lima — pago alternativo notaría Quintanilla:</strong> BCP · Titular: Ramiro Quintanilla Salinas · N°: 191-15345684-0-89 · Yape: 989-609-273</div>
+<hr class="divider">
+<p><strong>Flujo de pago:</strong></p>
+<div class="step"><div class="step-num">1</div><div class="step-text">Dealer/cliente deposita S/120 a COOPAC.</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> Envía constancia a Legal y Tesorería.</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-teso">TESORERÍA</span> Valida primero.</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> Procede una vez validado el pago.</div></div>
+<hr class="divider">
+<p class="note">⚠️ Global Go NO asume ningún costo de nueva legalización ni firma presencial. Lo asume dealer o cliente.</p>
+<p class="note">⚠️ El cliente es responsable de tener un DOI en buen estado (no roto ni deteriorado) y de informar su verdadero estado civil. Los costos generados por incumplimiento de estas responsabilidades son asumidos por el dealer o el cliente.</p>
+<p class="note">⚠️ La primera firma de garantía mobiliaria no tiene costo para el cliente. Solo aplica costo en caso de nueva legalización.</p>
+<p class="note">⚠️ Las adendas no tienen costo, salvo que requieran firma presencial.</p>` }
+    ]
+  },
+  { id:"notarias", area:"legal", icon:"🏛️", title:"Notarías Aliadas", color:"#fd79a8",
+    items:[
+      { q:"LIMA — Notaría Quintanilla (Ate, Surquillo, Comas)",
+        a:`<p><strong>Pago Lima:</strong> BCP · Titular: Ramiro Quintanilla Salinas · N°: 191-15345684-0-89 · Yape: 989-609-273</p><p><strong>Costo GM:</strong> Primera GM la asume Global Go. Nueva legalización: S/104 (S/100 + S/4 SIGM), lo asume dealer/cliente.</p><p><strong>Firma presencial contrato Lima:</strong> S/120 a COOPAC.</p><hr class="divider"><div class="bullet"><strong>Ate:</strong> Av. Nicolas Ayllon 3214 · Lun-Vie: 11:00am-4:45pm · Sáb: 9:15am-11:45am · <a href="https://maps.app.goo.gl/JrpSPQgkdjNnWh7j8" target="_blank" style="color:var(--accent)">Mapa</a></div><div class="bullet"><strong>Surquillo:</strong> Av. Tomas Marsano 877B, 2° Piso · Lun-Vie: 9:15am-6:45pm · Sáb: 9:15am-12:45pm</div><div class="bullet"><strong>Comas:</strong> Auxiliar Av. 22 de Agosto 968 · Lun-Vie: 9:15am-6:45pm · Sáb: 9:15am-12:45pm</div><p class="note">⚠️ Almuerzo 12:30pm-1:30pm sin atención. Solo Legal coordina con la notaría.</p>` },
+      { q:"CAÑETE — Notaría Camacho",
+        a:`<div class="bullet"><strong>Dirección:</strong> Jr. Bolognesi 3241, San Vicente de Cañete</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:15am-5:30pm · Sáb: 9:15am-12:30pm</div><div class="bullet"><a href="https://maps.app.goo.gl/PobYDjc6DSEQybQ19" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"SAN MARTÍN — Notarías (Lamas, Tarapoto, Juanjui, Moyobamba)",
+        a:`<div class="bullet"><strong>Lamas - Notaría García:</strong> Calle Chiclayo 108 · Lun-Vie: 9:15am-5:15pm · Sáb: 9:15am-12:15pm · Almuerzo: 1:00pm-2:30pm</div><div class="bullet"><strong>Tarapoto - Notaría Barrios Falcón:</strong> Jr. Pedro de Urzua N°110 · Lun-Vie: 9:15am-6:15pm · Sáb: 9:15am-12:30pm · Almuerzo: 1:00pm-3:00pm</div><div class="bullet"><strong>Juanjui - Notaría Bardalez Cochagne:</strong> Jr. La Merced N°434 · Lun-Vie: 9:15am-6:15pm · Sáb: 9:15am-12:30pm · Almuerzo: 1:00pm-3:00pm</div><div class="bullet"><strong>Moyobamba - Notaría Cordero Bautista:</strong> Jr. Callao N°491 · Lun-Vie: 9:15am-5:45pm · Almuerzo: 1:20pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/oKFVkFrVZitRPAHA8" target="_blank" style="color:var(--accent)">Mapa zona</a></div>` },
+      { q:"PIURA — Notarías (Piura, Sullana)",
+        a:`<div class="bullet"><strong>Piura - Notaría Quinde Razuri:</strong> Jr. Callao 343 · Lun-Vie: 9:30am-5:45pm · Sáb: 9:30am-1:00pm · Almuerzo: 1:30pm-2:30pm</div><div class="bullet"><strong>Sullana - Notaría Corno Yori:</strong> San Martin 847A · Lun-Vie: 9:30am-6:15pm · Sáb: 9:30am-1:00pm · Almuerzo: 1:30pm-4:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/FUdT9ZzqEG4q4mtr6" target="_blank" style="color:var(--accent)">Mapa zona</a></div>` },
+      { q:"ICA — Notarías (Ica, Chincha)",
+        a:`<div class="bullet"><strong>Ica - Notaría Vasquez Vidal:</strong> Av. San Martin de Porres 652 · Lun-Vie: 9:15am-5:45pm · Sáb: 9:15am-12:15pm · Almuerzo: 1:30pm-2:30pm</div><div class="bullet"><strong>Chincha - Notaría Nakasone Dizama:</strong> Calle Callao 138, Chincha Alta · Lun-Vie: 9:15am-6:45pm · Sáb: 9:15am-1:45pm</div><div class="bullet"><a href="https://maps.app.goo.gl/LKAXap9wteFTAHgW6" target="_blank" style="color:var(--accent)">Mapa zona</a></div>` },
+      { q:"LA LIBERTAD — Notarías (Trujillo, Casa Grande, Laredo)",
+        a:`<div class="bullet"><strong>Trujillo - Notaría Esquivel León:</strong> Av. América Sur 4124 · Lun-Vie: 9:30am-6:00pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:00pm-2:15pm</div><div class="bullet"><strong>Casa Grande - Notaría Segura Romero:</strong> Av. Central 196 · Lun-Vie: 9:15am-5:30pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:30pm-3:00pm</div><div class="bullet"><strong>Laredo - Notaría Bobadilla:</strong> Calle San Antonio N°259 · Lun-Vie: 9:30am-5:30pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:00pm-2:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/cE4GEVm7R4LFT9Bu9" target="_blank" style="color:var(--accent)">Mapa zona</a></div>` },
+      { q:"LAMBAYEQUE — Notarías (Chiclayo, Ferreñafe)",
+        a:`<div class="bullet"><strong>Chiclayo - Notaría Raúl Rivas:</strong> 7 de enero N°626 · Lun-Vie: 9:15am-6:00pm · Sáb: 9:15am-1:30pm</div><div class="bullet"><strong>Ferreñafe - Notaría Ruiz Castillo:</strong> Bolívar N°412 · Lun-Vie: 9:15am-5:30pm · Sáb: 9:15am-12:30pm · Almuerzo: 1:30pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/hKwS7Dprd2XutS6P7" target="_blank" style="color:var(--accent)">Mapa zona</a></div>` },
+      { q:"CAJAMARCA — Notaría Vigo Saldaña",
+        a:`<div class="bullet"><strong>Dirección:</strong> Jr. Apurimac 583, Cajamarca</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-6:30pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:00pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/eQHCuqVZqyWRE5rW7" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"UCAYALI — Notaría Mendoza Pozo (Pucallpa)",
+        a:`<div class="bullet"><strong>Dirección:</strong> Av. Yarinacocha Mz. 167-A Lote 6, Pucallpa</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:15am-5:15pm · Sáb: 9:15am-1:00pm · Almuerzo: 1:30pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/REf4oeU5Cx9ZPKnJ8" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"LORETO — Notaría Cárdenas (Iquitos)",
+        a:`<div class="bullet"><strong>Dirección:</strong> Ucayali 134, Iquitos</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-5:45pm · Sáb: 9:30am-12:15pm · Almuerzo: 1:30pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/Xfk8yCMNnKiWFmYdA" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"MADRE DE DIOS — Estudio Pantigoso (Puerto Maldonado)",
+        a:`<div class="bullet"><strong>Dirección:</strong> Av. Leon Velarde 741, Puerto Maldonado</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:15am-5:00pm · Sáb: 9:15am-11:30am · Almuerzo: 12:30pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/ukYY1kdeHGKm7WTT7" target="_blank" style="color:var(--accent)">Mapa</a></div><p class="note">⚠️ CASO ESPECIAL: El cliente debe ir al Estudio Pantigoso, su personal lo lleva a la Notaría para evitar cola.</p>` },
+      { q:"HUACHO / HUARAL — Notarías",
+        a:`<div class="bullet"><strong>Huacho - Notaría Mejía:</strong> Av. Túpac Amaru 132 · Lun-Vie: 9:30am-5:30pm · Sáb: 9:30am-12:30pm</div><div class="bullet"><strong>Huaral - Notaría Otayza:</strong> Las Cucardas 193 · Lun-Vie: 9:30am-4:30pm · Almuerzo: 1:00pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/o4taNp3RBhrca1a37" target="_blank" style="color:var(--accent)">Mapa zona</a></div><p class="note">⚠️ CASO ESPECIAL HUARAL: El cliente debe recoger primero el documento en "COPIAS JESUS", stand 16B, Galería La Pirámide. Luego va a la notaría.</p>` },
+      { q:"CHIMBOTE — Notaría Pastor La Rosa",
+        a:`<div class="bullet"><strong>Dirección:</strong> Av. Francisco Bolognesi 301</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-5:00pm · Sáb: 9:35am-1:00pm · Almuerzo: 1:30pm-2:30pm</div><div class="bullet"><a href="https://maps.app.goo.gl/3cFFwPNm4TWkxYfu6" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"HUÁNUCO — Notaría Feria Zevallos",
+        a:`<div class="bullet"><strong>Dirección:</strong> Jr. Javier Pulgar Vidal 218</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-6:00pm · Sáb: 9:30am-12:15pm · Almuerzo: 1:30pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/jqxaEDZKaW5MrBvE8" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"JAÉN — Notaría Ruiz Castillo",
+        a:`<div class="bullet"><strong>Dirección:</strong> Pardo Miguel 131, Jaén</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-5:30pm · Sáb: 9:30am-12:30pm</div><div class="bullet"><a href="https://maps.app.goo.gl/q9bBEQ2tN5Zvms8p8" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"AYACUCHO — Notaría Machaca",
+        a:`<div class="bullet"><strong>Dirección:</strong> Jr. Callao 221</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-6:00pm · Sáb: 9:30am-1:30pm · Almuerzo: 1:30pm-3:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/V5L8ZM23TeeQM2HQ9" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"HUANCAYO / JUNÍN — Notarías (Huancayo, La Merced, Tarma, Jauja)",
+        a:`<div class="bullet"><strong>Huancayo - Notaría Quispe:</strong> Jr. Ancash 153 · Lun-Vie: 9:30am-6:00pm · Sáb: 9:30am-1:30pm · Almuerzo: 1:00pm-3:00pm · <a href="https://maps.app.goo.gl/MrDCtHkS3DTcB8T37" target="_blank" style="color:var(--accent)">Mapa</a></div><div class="bullet"><strong>La Merced - Notaría Auris Rodriguez:</strong> Jirón Arequipa 284 · Lun-Vie: 9:30am-4:30pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:00pm-2:15pm · <a href="https://maps.app.goo.gl/DNTLv61WoRLvFKZ67" target="_blank" style="color:var(--accent)">Mapa</a></div><div class="bullet"><strong>Tarma - Notaría Paulo Vivas:</strong> Jirón Chanchamayo 617 · Lun-Vie: 9:30am-5:30pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:30pm-3:00pm · <a href="https://maps.app.goo.gl/8YnTZKTFAGY7z9o36" target="_blank" style="color:var(--accent)">Mapa</a></div><div class="bullet"><strong>Jauja - Notaría Quispelaya:</strong> Jirón Bolivar 883 · Lun-Vie: 9:30am-6:30pm · Sáb: 9:30am-12:30pm · Almuerzo: 1:00pm-3:00pm · <a href="https://maps.app.goo.gl/FbuZHrDAFaCzcpWw8" target="_blank" style="color:var(--accent)">Mapa</a></div><p class="note">⚠️ Notaría Quispelaya es la única en Jauja.</p><div class="bullet"></div>` },
+      { q:"HUARAZ — Notaría Manosalva",
+        a:`<div class="bullet"><strong>Dirección:</strong> Jirón 28 de Julio 706</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-6:00pm · Sáb: 9:30am-1:00pm</div><div class="bullet"><a href="https://maps.app.goo.gl/QPNqeHoDEyTvNA689" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"AREQUIPA — Notaría Morote Valenza",
+        a:`<div class="bullet"><strong>Dirección:</strong> C. Sta. Marta 317</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-6:00pm · Sáb: 9:30am-12:30pm</div><div class="bullet"><a href="https://maps.app.goo.gl/Hutoyg8X7T5VQfef9" target="_blank" style="color:var(--accent)">Mapa</a></div>` },
+      { q:"BAGUA / BAGUA GRANDE — Notaría Celis",
+        a:`<div class="bullet"><strong>Dirección:</strong> Jr. Mesones Muro 348, Bagua Grande</div><div class="bullet"><strong>Horario:</strong> Lun-Vie: 9:30am-6:00pm · Almuerzo: 1:00pm-3:00pm (sin atención sábados)</div><div class="bullet"><a href="https://maps.app.goo.gl/AWB2VQsqPnJvDTcR9" target="_blank" style="color:var(--accent)">Mapa</a></div>` }
+    ]
+  },
+  { id:"empresas", area:"legal", icon:"🏦", title:"Empresas Aliadas", color:"#00b894",
+    items:[
+      { q:"COOPAC — Datos de cuenta bancaria",
+        a:`<div class="bullet"><strong>Razón social:</strong> Cooperativa de Ahorro y Crédito Promotora de Negocios y Servicios</div><div class="bullet"><strong>RUC:</strong> 20523897048</div><div class="bullet"><strong>Cuenta Corriente Soles Interbank:</strong> 2003008200279</div><div class="bullet"><strong>CCI Soles:</strong> 00320000300820027938</div><hr class="divider"><p><strong>¿Cuándo se deposita a COOPAC?</strong></p><div class="bullet">Nueva legalización de GM (Lima o provincia): S/120</div><div class="bullet">Firma presencial de contrato (Lima o provincia): S/120</div><hr class="divider"><div class="step"><div class="step-num">1</div><div class="step-text">Dealer/cliente deposita a COOPAC.</div></div><div class="step"><div class="step-num">2</div><div class="step-text"><span class="tag tag-comercial">COMERCIAL</span> envía constancia a Legal Y Tesorería.</div></div><div class="step"><div class="step-num">3</div><div class="step-text"><span class="tag tag-teso">TESORERÍA</span> valida primero.</div></div><div class="step"><div class="step-num">4</div><div class="step-text"><span class="tag tag-legal">LEGAL</span> procede una vez validado.</div></div>` }
+    ]
+  },
+  { id:"ruc", area:"legal", icon:"🏢", title:"RUC y Razón Social", color:"#00cec9",
+    items:[
+      { q:"RUC y razón social de las empresas del grupo",
+        a:`<div class="bullet"><strong>COOPAC:</strong> RUC 20523897048 · Cooperativa de Ahorro y Crédito Promotora de Negocios y Servicios</div><div class="bullet"><strong>Global Factoring:</strong> RUC 20602099203 · Global Factoring S.A.</div><div class="bullet"><strong>Global Go:</strong> RUC 20611596155 · Global Go S.A.C.</div><div class="bullet"><strong>Empresa de Cobranza GG:</strong> RUC 20615288811 · Empresa de Cobranza y Recuperaciones GG S.A.C.</div>` }
+    ]
+  }
+];
+
+// Build search index
+const IDX = [];
+CATS.forEach(c => c.items.forEach((it,i) => IDX.push({catId:c.id,catTitle:c.title,idx:i,q:it.q,kw:it.q.toLowerCase()})));
+
+let hist = [];
+
+function handleParejaEstadoCivil(tipo) {
+  const resp = document.getElementById('ai-response');
+  const label = tipo === 'casados' ? 'son casados' : 'son convivientes/novios';
+  resp.innerHTML = `<p>Entendido, ${label}. ¿El cliente ya firmó su garantía mobiliaria?</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+      <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('tive')">✅ Sí, ya firmó garantía</button>
+      <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('agregar')">❌ No, aún no firma garantía</button>
+    </div>`;
+}
+
+
+// ======= CONFIGURACIÓN APPS SCRIPT =======
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfpdjgpBCL9OSkJKHQb8jhTLncavsLoJlzUhkeVFS_IiAAXnFnPhzVdDzUZp7UdIXqNw/exec';
+
+// Cargar clientes ejecutados desde Apps Script via JSONP
+function cargarEjecutadosAPI() {
+  return new Promise((resolve) => {
+    const callbackName = 'cbEjec_' + Date.now();
+    window[callbackName] = function(data) {
+      try {
+        if (Array.isArray(data) && data.length > 0) {
+          window.ejecutadosData = data.map(r => ({
+            c: r.c || '',
+            d: r.d || '',
+            p: normalizarPlaca(r.p || ''),
+            f: r.f || '',
+            prov: r.prov || '',
+            er: r.er || ''
+          })).filter(r => r.c);
+          window.ejecutadosCargado = true;
+          console.log('Ejecutados cargados desde Apps Script:', window.ejecutadosData.length);
+        } else throw new Error('Sin datos');
+      } catch(e) {
+        console.warn('Apps Script ejecutados falló:', e.message);
+        if (window.ejecutadosData.length < 100) { window.ejecutadosData = EJECUTADOS_DATA; }
+        window.ejecutadosCargado = true;
+      }
+      document.getElementById(callbackName + '_script')?.remove();
+      delete window[callbackName];
+      resolve();
+    };
+    const script = document.createElement('script');
+    script.id = callbackName + '_script';
+    script.src = APPS_SCRIPT_URL + '?tipo=ejecutados&callback=' + callbackName + '&t=' + Date.now();
+    script.onerror = () => {
+      if (window.ejecutadosData.length > 100) return resolve();
+      console.warn('Apps Script ejecutados: error de red, usando datos locales');
+      window.ejecutadosData = EJECUTADOS_DATA;
+      window.ejecutadosCargado = true;
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// Cargar procedimientos desde Apps Script via JSONP
+function cargarProcedimientosAPI() {
+  return new Promise((resolve) => {
+    const callbackName = 'cbProc_' + Date.now();
+    window[callbackName] = function(rows) {
+      try {
+        if (!Array.isArray(rows) || rows.length === 0) throw new Error('Sin datos');
+
+    // Reconstruir CATS desde Apps Script
+    const catsMap = {};
+    const catOrder = [];
+    const catAreaMap = {};
+    rows.forEach(r => {
+      const cat = (r.categoria || '').trim();
+      const pregunta = (r.pregunta || '').trim();
+      const respuesta = (r.respuesta || '').trim();
+      const notas = (r.notas || '').trim();
+      if (!cat || !pregunta || !respuesta) return;
+      if (!catsMap[cat]) {
+        catsMap[cat] = [];
+        catOrder.push(cat);
+        catAreaMap[cat] = (r.area || 'LEGAL').trim().toUpperCase();
+      }
+      // Usar el HTML ya procesado por Apps Script
+      const aHtml = respuesta + (notas ? notas : '');
+      catsMap[cat].push({ q: pregunta, a: aHtml });
+    });
+
+    // Solo actualizar items de las categorías que vienen del Sheet
+    if (catOrder.length > 0) {
+      const matchedCatIds = new Set();
+      CATS.forEach(cat => {
+        // Buscar TODAS las claves que coincidan (para agrupar Lima + Provincia en notarías)
+        const aliasMap = { moto: ['ENTREGA DE LA MOTO','CAMBIO DE UNIDAD','PROBLEMAS CON LA MOTO'], contrato: ['FIRMA DEL CONTRATO','SEGUIMIENTO DE CONTRATOS','SEGUIMIENTO CONTRATOS','SEGUIMIENTO DE CONTRATOS / GO TRACK','SEGUIMIENTO DE CONTRATOS/ GO TRACK','SEGUIMIENTO DE FIRMAS','SEGUIMIENTO DE FIRMAS / GO TRACK','SEGUIMIENTO DE FIRMAS/ GO TRACK'], agregar: ['AGREGAR O QUITAR ALGUIEN AL CREDITO','AGREGAR O QUITAR A ALGUIEN DEL CREDITO','AGREGAR O QUITAR','AGREGAR O QUITAR A ALGUIEN'] };
+        const aliases = aliasMap[cat.id] || [];
+        const matchingKeys = Object.keys(catsMap).filter(k => {
+          const kUp = k.split('—')[0].trim().toUpperCase();
+          const tUp = cat.title.toUpperCase().split('—')[0].trim();
+          return tUp.includes(kUp) || kUp.includes(tUp) ||
+            (cat.id === 'notarias' && (kUp.includes('NOTARIA') || kUp.includes('NOTAR'))) ||
+            aliases.some(a => kUp.includes(a) || a.includes(kUp));
+        });
+        if (matchingKeys.length > 0) {
+          const allItems = matchingKeys.reduce((acc, k) => acc.concat(catsMap[k]), []);
+          if (allItems.length > 0) cat.items = allItems;
+          cat.area = (catAreaMap[matchingKeys[0]] || 'LEGAL').toLowerCase();
+          // Actualizar título al nombre del Sheet
+          cat.title = matchingKeys[0];
+          matchedCatIds.add(cat.id);
+          matchingKeys.forEach(k => { delete catsMap[k]; });
+        }
+      });
+
+      // Eliminar categorías hardcodeadas que no se emparejaron
+      // (el nombre cambió en el Sheet y se creará como categoría nueva)
+      const protectedIds = ['ejecutados','motos_venta'];
+      for (let i = CATS.length - 1; i >= 0; i--) {
+        if (!matchedCatIds.has(CATS[i].id) && !protectedIds.includes(CATS[i].id)) {
+          CATS.splice(i, 1);
+        }
+      }
+
+      // Crear CATS nuevos para categorías de otras áreas
+      const catColors = ['#6c63ff','#ff9f43','#e74c3c','#27ae60','#3498db','#8e44ad','#1abc9c','#e67e22'];
+      const catIcons = ['📋','📊','💼','🔧','📦','📞','🏢','📝'];
+      let colorIdx = 0;
+      Object.keys(catsMap).forEach(catName => {
+        if (catsMap[catName].length === 0) return;
+        const area = (catAreaMap[catName] || 'LEGAL').toLowerCase();
+        const catId = catName.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        CATS.push({ id: catId, area: area, icon: catIcons[colorIdx % catIcons.length],
+          title: catName, color: catColors[colorIdx % catColors.length], items: catsMap[catName] });
+        colorIdx++;
+      });
+
+      // Construir AREAS dinámicamente
+      const areasSet = new Set();
+      CATS.forEach(c => areasSet.add((c.area || 'legal').toUpperCase()));
+      areasSet.forEach(areaName => {
+        const aId = areaName.toLowerCase();
+        if (!AREAS.find(a => a.id === aId)) {
+          const defaults = AREA_DEFAULTS[areaName] || AREA_DEFAULTS['DEFAULT'];
+          AREAS.push({ id: aId, name: areaName.charAt(0) + areaName.slice(1).toLowerCase(),
+            icon: defaults.icon, color: defaults.color, desc: defaults.desc });
+        }
+      });
+
+      console.log('Procedimientos actualizados desde API');
+      console.log('Áreas:', AREAS.map(a => a.name).join(', '));
+      IDX.length = 0;
+      CATS.forEach(c => c.items.forEach((it,i) => IDX.push({catId:c.id,catTitle:c.title,idx:i,q:it.q,kw:it.q.toLowerCase()})));
+      window._apiBuildDone = true;
+      buildHome();
+    }
+  } catch(e) {
+        console.warn('Procedimientos Apps Script falló:', e.message);
+      }
+      document.getElementById(callbackName + '_script')?.remove();
+      delete window[callbackName];
+      resolve();
+    };
+    const script = document.createElement('script');
+    script.id = callbackName + '_script';
+    script.src = APPS_SCRIPT_URL + '?tipo=procedimientos&callback=' + callbackName + '&t=' + Date.now();
+    script.onerror = () => { resolve(); };
+    document.head.appendChild(script);
+  });
+}
+
+// Cargar todo al inicio
+window.addEventListener('load', function() {
+  cargarEjecutadosAPI();
+  cargarProcedimientosAPI();
+});
+
+
+// ======= CLIENTES EJECUTADOS =======
+// Datos de clientes ejecutados (GM inscrita)
+const EJECUTADOS_DATA = [{"c": "MOISES ALEJANDRO ESPINOZA BORREGO", "d": "7229703", "p": "4896-UC"}, {"c": "SOTO CARTAGENA CELESTINO", "d": "45419168", "p": "0588-RC"}, {"c": "JOSEPH ERNESTO ROJAS MENDOZA", "d": "6969323", "p": "1674-TC"}, {"c": "MATIAS JESUS FIGUEROA RUBIO", "d": "73788548", "p": "3030-TC"}, {"c": "EMILIO ALEJANDRO CASTILLO CARRIÓN", "d": "74645514", "p": "0612-TC"}, {"c": "ASTRID ARIANNI HERRERA PEREZ", "d": "5444184", "p": "5048-SC"}, {"c": "GABRIEL JOSE ARTURO MAYURI BENITES", "d": "76319746", "p": "2505-SC"}, {"c": "ISRAEL NUÑEZ VELIZ", "d": "77676086", "p": "7750-TC"}, {"c": "JONATHAN JOSE PEREZ ESPINOZA", "d": "7617886", "p": "7601-TC"}, {"c": "MIGUEL ANGEL CALET MILIAN GOMEZ", "d": "72309835", "p": "9252-TC"}, {"c": "PEDRO MARCELO RAMIREZ GUEVARA", "d": "73427852", "p": "0626-RC"}, {"c": "LILIBETH SHUPINGAHUA TUANAMA", "d": "70176293", "p": "9096-RC"}, {"c": "ARMANDO ANTONIO COLINA ROSAS", "d": "2590094", "p": "7301-UC"}, {"c": "JOSE ANGEL PEÑA DELGADO", "d": "7334917", "p": "1737-TC"}, {"c": "AUGUSTO MOISES RIVERA PUGA", "d": "43497835", "p": "6825-TC"}, {"c": "ANGEL JAVIER CALLIRGOS TELLES", "d": "44669442", "p": "8991-UC"}, {"c": "ANGEL DANIEL ANZOLA ESCALONA", "d": "7137461", "p": "7210-VC"}, {"c": "JESUS HERNAN PARRA ARTEAGA", "d": "6961938", "p": "2799-TC"}, {"c": "EDISON BECKER RAZA JARAMILLO", "d": "47327651", "p": "4549-RC"}, {"c": "EDWAR ALEXIS VILLEGAS VILLA", "d": "4077247", "p": "0496-VC"}, {"c": "RANDY JOSE SIMANCAS RIVAS", "d": "6831314", "p": "7201-VC"}, {"c": "ROSARIO JHASMIN DELGADO DE LA FLOR CUYA", "d": "47954808", "p": "9145-WC"}, {"c": "TARCY ALEXANDER BARRIO ACOSTA", "d": "5167241", "p": "3095-WC"}, {"c": "KATY NICOL VICUÑA CONTRERAS", "d": "71662774", "p": "7944-RC"}, {"c": "CHRISTIAN AUGUSTO VENTURA BELTRAN", "d": "78009066", "p": "1855-TC"}, {"c": "KARLA EUGENIA MORI PAZ", "d": "47203988", "p": "4428-SC"}, {"c": "FREDERYCK ANTONIO GUTIERREZ ROMERO", "d": "8168676", "p": "0220-WC"}, {"c": "ELIO ALFONSO HERNÁNDEZ VALLEJOS", "d": "71656453", "p": "3403-TC"}, {"c": "EDISHON WLADIMIR ARRAIZA LAYME", "d": "77438533", "p": "3759-WC"}, {"c": "MANUEL ALEJANDRO PINTO CASTILLO", "d": "5205124", "p": "7225-VC"}, {"c": "GLADYS MARIA SILVA MONTILLA", "d": "6883343", "p": "4085-UC"}, {"c": "DANILO ENRIQUE RUIZ PINEDA", "d": "43435536", "p": "6843-TC"}, {"c": "EDINSON REINETH TORRES MELUS", "d": "6142986", "p": "1832-VC"}, {"c": "YORIANNY SANCHEZ MONASTERIO", "d": "7327336", "p": "3645-XC"}, {"c": "LIVANY ANDREINA CEDEÑO SOLORZANO", "d": "4654011", "p": "8839-VC"}, {"c": "JOSE JULIAN URDANETA GONZALEZ", "d": "8277938", "p": "1685-WC"}, {"c": "MARISANNI BELISARIO CARREÑO", "d": "4164838", "p": "1649-VC"}, {"c": "ERIS ROLANDO LOPEZ VILLANUEVA", "d": "3834353", "p": "2599-XC"}, {"c": "JOSE RAFAEL BRITO TOTESAUTT", "d": "5318502", "p": "7685-XC"}, {"c": "JONATHAN DAVID PEREIRA CASTILLO", "d": "8448073", "p": "3979-XC"}, {"c": "ADRIANA CONSUELO MENDEZ LUGO", "d": "6258016", "p": "5522-UC"}, {"c": "REBECA DULSAY SANCHEZ", "d": "5054097", "p": "1769-WC"}, {"c": "JESUS MANUEL SALAS SILVA", "d": "7901120", "p": "8949-VC"}, {"c": "LEDUIS FRANCISCO FARFAN CAMPERO", "d": "6557811", "p": "4412-XC"}, {"c": "VANESSA TEOFILA NAVARRO QUIÑONES", "d": "48301608", "p": "8830-YC"}, {"c": "SIMON PEDRO MEJIA VASQUEZ", "d": "76768264", "p": "8379-TC"}, {"c": "CELIO OMAN HAMED RIOS CARRASQUERO", "d": "6715896", "p": "7982-XC"}, {"c": "YONNY JOSE ESPAÑA BLANCO", "d": "7013890", "p": "1685-XC"}, {"c": "BRIGITH FIORELA SOTO JIMENEZ", "d": "7659304", "p": "6888-WC"}, {"c": "JHOANMIL DIAZ MANZANO", "d": "6816282", "p": "4089-ZC"}, {"c": "ROBERTO GABRIEL SUAZO VILLANUEVA", "d": "77822194", "p": "2066-ZC"}, {"c": "YONATAN ZACARIAS SABINO ROJAS", "d": "44367485", "p": "4505-UC"}, {"c": "JOSE REINARDO ACOSTA", "d": "8088547", "p": "0480-YC"}, {"c": "JOSE ALFREDO LEDEZMA VELASCO", "d": "8114783", "p": "5615-WC"}, {"c": "BRYAN PAULO GONZÁLES ULFFE", "d": "75302839", "p": "5681-XC"}, {"c": "MIJAEL ESTEFANO SANCHEZ CALDAS", "d": "72970560", "p": "7226-TC"}, {"c": "JHONNY JOSE PARRA MUCHACHO", "d": "5534947", "p": "3625-XC"}, {"c": "CARLOS ENRIQUE RODRIGUEZ OSCANOA", "d": "71016554", "p": "5950-VC"}, {"c": "GUSTAVO ADOLFO GALVAN GONZALEZ", "d": "4925727", "p": "6512-VC"}, {"c": "KARINA DEL CARMEN RONDON LA CRUZ", "d": "8252090", "p": "6534-WC"}, {"c": "PAULIMAR STHEFANY ORTEGA CASTILLO", "d": "8302854", "p": "8101-ZC"}, {"c": "ANGELA DEL ROCIO CASTRO GRADOS", "d": "76730090", "p": "4309-XC"}, {"c": "ALONSO HUACACHI CARI", "d": "71021503", "p": "2004-TC"}, {"c": "RUITER TUANAMA CABALLERO", "d": "76678515", "p": "2699-YC"}, {"c": "FRANK JORDAN MALCA DOMINGUEZ", "d": "73244323", "p": "4686-XC"}, {"c": "THABATTA ARIANA NAYELI LARA GALVEZ", "d": "75604263", "p": "5097-ZC"}, {"c": "MOISES EDUARDO MARCHENA SALAS", "d": "8175518", "p": "4397-WC"}, {"c": "MANUELA CASTAÑO VALENCIA", "d": "1853253", "p": "9086-UC"}, {"c": "ELIO LUIS TANANTA PEREZ", "d": "70085140", "p": "9824-WC"}, {"c": "CRISTÓBAL JOSE MENDOZA BARRETO", "d": "6420500", "p": "9721-VC"}, {"c": "GABRIEL ALEXANDER ALCALÁ CASTILLO", "d": "7591094", "p": "5213-WC"}, {"c": "LUIS GERARDO ALFARO VILLARROEL", "d": "4740206", "p": "0582-TC"}, {"c": "SAMANTHA YENIFER MABEL  SOTO APAZA", "d": "75969436", "p": "0946-WC"}, {"c": "RICHARD GABRIEL GUAIRA ESPINOZA", "d": "8067694", "p": "6037-YC"}, {"c": "PATRICIA DE JESUS ROJAS PEREZ", "d": "5617124", "p": "3822-XC"}, {"c": "MANUEL ANTONIO SOJO", "d": "8441546", "p": "8565-YC"}, {"c": "BRANDON ABEL SANTOS VEGA", "d": "71427386", "p": "4436-UC"}, {"c": "MOISES PANAIFO RUIZ", "d": "61630248", "p": "2662-WC"}, {"c": "MARCELO AGKUASH PAPE", "d": "62453387", "p": "7315-ZC"}, {"c": "ROGER JOSE MARQUEZ BARRETO", "d": "8267041", "p": "8584-WC"}, {"c": "JHONNYGABRIEL SOTO NUÑEZ", "d": "7338000", "p": "2384-XC"}, {"c": "ORLANDO JOSE ARAUJO RANGEL", "d": "6645285", "p": "8292-XC"}, {"c": "GLEIBERT LEANDRO PIÑA CESAR", "d": "6564196", "p": "7019-YC"}, {"c": "JOSEPH BRUNO JESUS RONDO GAMERO", "d": "72694725", "p": "2172-XC"}, {"c": "CARLOS EDUARDO VILORIA DAVID", "d": "5446316", "p": "4680-VC"}, {"c": "FRANCISCO ANTONIO SIRA", "d": "8289383", "p": "8096-WC"}, {"c": "PEDRO ALEXANDER VALERIO DOMÍNGUEZ", "d": "6097124", "p": "8297-XC"}, {"c": "ARMANDO JOSUE BLANCO MACHADO", "d": "7880815", "p": "2683-VC"}, {"c": "ABRAHAM HANIEL ALVARADO SILVA", "d": "8072633", "p": "7763-VC"}, {"c": "RAUL ANDRES PERRY NUÑEZ", "d": "49025240", "p": "7438-UC"}, {"c": "LUISMER JOSEFINA PIÑATES TOVAR", "d": "5167124", "p": "4762-XC"}, {"c": "ENRIQUE ALEJANDRO CASTILLEJO GONZALEZ", "d": "8368451", "p": "5150-WC"}, {"c": "ANNY YELIBETH MÁRQUEZ TOVAR", "d": "7899545", "p": "7636-VC"}, {"c": "LEIWIS YOARLING OLIVARES BARRIENTOS", "d": "7898380", "p": "8440-WC"}, {"c": "ANDREA ESTEFANIA GUERRERO CONTRERAS", "d": "3043642", "p": "6885-XC"}, {"c": "CRISANTO RAMON TORRES RAMOS", "d": "6654190", "p": "0204-UC"}, {"c": "CRISMARY DEL CARMEN SALAS ROJAS", "d": "8115078", "p": "3043-ZC"}, {"c": "ANDRIS SIMON GONZALEZ ESCOBAR", "d": "6861664", "p": "9943-ZC"}, {"c": "DARWIN SERRANO RASEC", "d": "2403192", "p": "5300-SC"}, {"c": "JOSE EDUARDO VASQUES VARGAS", "d": "72840584", "p": "0177-VC"}, {"c": "ANGEL GABRIEL MUJICA ALVARADO", "d": "8012966", "p": "9583-VC"}, {"c": "ANNA CECILIA SILVA HUERTAS (LP)", "d": "72613118", "p": "5390-TC"}, {"c": "RAMON ALEXANDER TROCEL GONZALEZ", "d": "7001384", "p": "4073-UC"}, {"c": "DIANA ALEJANDRA FIGUEROA PUERTA", "d": "5959121", "p": "0194-WC"}, {"c": "JESUS ALEJANDRO RAMIREZ GUTIERREZ", "d": "4622913", "p": "1792-VC"}, {"c": "JUNIOR LUIS MARTINEZ CELIS", "d": "76752557", "p": "5389-UC"}, {"c": "JESUS DAVID SIVIRA COLMENAREZ", "d": "7265564", "p": "9828-WC"}, {"c": "CARLOS ALEXANDER GONZALEZ ZAMORA", "d": "4417160", "p": "6917-VC"}, {"c": "WILLIAM MIGUEL CHACON SOJO", "d": "4004866", "p": "8919-ZC"}, {"c": "NAUDY GUILLERMO ROMERO VARGAS", "d": "7922316", "p": "1369-XC"}, {"c": "KAROL GABRIELA DIAZ VERA", "d": "8626488", "p": "3185-AD"}, {"c": "MARIA DE LOS ANGELES SOTILLO JIMENEZ (ayacucho)", "d": "4497675", "p": "9833-4I"}, {"c": "ENRIQUE JESUS VIVAS PEREZ", "d": "6039981", "p": "3461-XC"}, {"c": "RICARDO MAURICIO REYES CHUNGA", "d": "76279283", "p": "3084-WC"}, {"c": "WILLIAM RICARDO RUEDA PEREZ", "d": "73901590", "p": "2341-TC"}, {"c": "ROBER LOZANO CRUZADO", "d": "73963357", "p": "5430-UC"}, {"c": "MAURICIO EDUARDO CARRASQUEL FIGUEROA", "d": "7545996", "p": "6625-YC"}, {"c": "CARLOS ANTONIO BELLO GUERRA", "d": "7291956", "p": "8363-VC"}, {"c": "LUIS DAVID ROJAS ROMERO", "d": "8448210", "p": "4977-WC"}, {"c": "YARIMA IMALAY ANDRADE FARIÑAS", "d": "6896064", "p": "9136-VC"}, {"c": "JEAN CARLOS JOSE FERNANDEZ SEGURA", "d": "7822714", "p": "6799-XC"}, {"c": "JOSEPHER ALBERTO LEON PIPLACA", "d": "4265096", "p": "0522-XC"}, {"c": "MARIA DEL PILAR PACHERREZ ANTON", "d": "77101456", "p": "4670-VC"}, {"c": "JHINO JACK GARCIA GARCIA", "d": "77169063", "p": "4049-ZC"}, {"c": "GREIDY BEDOYA GALLEGO", "d": "49071026", "p": "5925-XC"}, {"c": "YENDER GIOVANNY PÉREZ ASCANIO", "d": "7824941", "p": "9135-VC"}, {"c": "CARLOS DANIEL QUINTERO", "d": "8348313", "p": "5394-XC"}, {"c": "RODOLFO HUMBERTO MAITA QUIÑONES", "d": "9557075", "p": "7216-UC"}, {"c": "CHRISTIAN RENEE ARIAS LA ROSA", "d": "6491337", "p": "2144-WC"}, {"c": "NIGMARY ESTER VILLARROEL RIVEROL", "d": "8427965", "p": "9699-WC"}, {"c": "MARICELA MONTOYA MALAVER", "d": "49040199", "p": "6592-SC"}, {"c": "DANIEL JOSE RIVERO VALDERRAMA", "d": "7365252", "p": "9026-XC"}, {"c": "LERMARY ANDREA MONTERO VILLEGAS", "d": "7786996", "p": "2841-XC"}, {"c": "ALEXANDER JOSE BRAVO LANDINO", "d": "7048856", "p": "5987-YC"}, {"c": "ASTRID LIZ TICONA CONTRERAS", "d": "72776659", "p": "9968-YC"}, {"c": "JHONEIKER JESUS PAREDES ABREU", "d": "7334021", "p": "4645-VC"}, {"c": "JOSE ANGEL ALVIAREZ GARCIA", "d": "7623752", "p": "7689-WC"}, {"c": "DEIVIS ENRIQUE TORCATEZ NIEVES", "d": "6915078", "p": "7929-WC"}, {"c": "DEGNNY RAFAEL MARTÍNEZ", "d": "5801234", "p": "0909-XC"}, {"c": "JORGE LUIS TOMANGUILLA DONAYRE", "d": "47593731", "p": "0506-TC"}, {"c": "KEVIN DANIEL LOZANO SALIBA", "d": "4795278", "p": "6751-UC"}, {"c": "JONATHAN LEONEL GUERRA MARIÑO", "d": "5644864", "p": "9740-UC"}, {"c": "LUISVER GABRIEL JIMENEZ MARTINEZ", "d": "7297200", "p": "7518-VC"}, {"c": "YESSICA DEL VALLE GUEVARA CASANOVA", "d": "6824287", "p": "8208-VC"}, {"c": "ENDER ADRIAN ALVAREZ RODRIGUEZ", "d": "7841947", "p": "3367-XC"}, {"c": "DAYID JOSE PAZ BETANCOURT", "d": "6826054", "p": "8808-XC"}, {"c": "KEVIN MEZONES PALOMINO", "d": "74158089", "p": "4976-AD"}, {"c": "NAYESKA MARISOL GALLARDO GALLARDO", "d": "8628858", "p": "1937-YC"}, {"c": "MAHLI JOCABED PARAGUAY REYES (lp)", "d": "76944112", "p": "1128-UC"}, {"c": "JAZMIN ARACELLI PATROCINIO OLIVA", "d": "74733552", "p": "7508-VC"}, {"c": "VICTOR ALFONSO NUÑEZ MEDINA", "d": "8345922", "p": "2558-WC"}, {"c": "SERGIO JOSE PEREZ VARGAS", "d": "8575093", "p": "3723-XC"}, {"c": "HUGO STVENS CHAÑI ROMAN", "d": "48225282", "p": "0563-WC"}, {"c": "FRANYELIS YAMILETH CALDERONES BARRIOS", "d": "8286696", "p": "2443-XC"}, {"c": "JOSE MANUEL ARRIECHE PERDOMO", "d": "9027746", "p": "5215-AD"}, {"c": "ELVI ANTONIO PINO BOHORQUEZ", "d": "7535052", "p": "9807-AD"}, {"c": "ELMER REYES SALAS", "d": "47159595", "p": "1820-XC"}, {"c": "VERONIKA JEANETT BENAVIDES MELGAR", "d": "40839050", "p": "2563-WC"}, {"c": "ALEJANDRO JESUS MILLAN PORRAS", "d": "8535715", "p": "9641-XC"}, {"c": "ANTONY MARTIN VERGARA RAMOS", "d": "47879113", "p": "1540-XC"}, {"c": "KEMBERLYN ANDREINA FREITEZ ALVAREZ", "d": "2181616", "p": "5027-WC"}, {"c": "JESUS OSCAR GONZALEZ PEREZ", "d": "8133384", "p": "4484-WC"}, {"c": "MARIA JOSE CAMAGUACAN", "d": "7670350", "p": "9077-XC"}, {"c": "DOUGLAS JOSE MEDINA CHACON", "d": "5251847", "p": "4112-UC"}, {"c": "NEIVER GABRIEL ACOSTA VALERA", "d": "7432104", "p": "1758-VC"}, {"c": "KARLYN KATIANA GARCIA OLMEDILLO", "d": "8264177", "p": "1981-ZC"}, {"c": "WILLIAMS FABRICIO VARGAS SANTILLAN", "d": "60870795", "p": "0433-SC"}, {"c": "MARCELO STHEPHANO VARGAS CHAVEZ", "d": "74813339", "p": "7083-XC"}, {"c": "DOYLITH GRANDEZ PAREDES", "d": "41997509", "p": "6732-XC"}, {"c": "YURI ELIZABETH PACHERREZ GOMEZ", "d": "47840410", "p": "9375-UC"}, {"c": "EDUARDO JOSE ESPEJO", "d": "7749213", "p": "1391-YC"}, {"c": "FREDDY MANUEL GOMEZ CALMA", "d": "8672395", "p": "5661-YC"}, {"c": "WILLIAMS ALEJANDRO ESCALONA PEÑALOZA", "d": "8465048", "p": "5301-WC"}, {"c": "YOHANNY KAROLAI MEDINA RUIZ", "d": "8249753", "p": "3996-YC"}, {"c": "WINDER EMILIO GONZALEZ PINTO", "d": "8638912", "p": "8585-AD"}, {"c": "CHRISTIAN CARLOS VILLANUEVA SANCHEZ", "d": "73253794", "p": "1271-XC"}, {"c": "JOSE ANTONIO TORBISCO PRETELL", "d": "46816159", "p": "7945-RC"}, {"c": "MARIA MONCERRATTE ALONZO HERNANDEZ", "d": "6844936", "p": "6679-WC"}, {"c": "GELIO ISAAC GUEVARA LUZARDO", "d": "5149855", "p": "8143-AD"}, {"c": "HUMBERTO ANTONIO MEZA SALAZAR", "d": "8279767", "p": "1779-XC"}, {"c": "JOHANNY JOSUE FERNANDEZ CHACIN", "d": "6306295", "p": "7822-UC"}, {"c": "KEIBER DEIKER EDUARDO MARTINEZ TORREZ", "d": "5101996", "p": "5201-WC"}, {"c": "SAMUEL RAMON PEÑA CARRIZO", "d": "5238116", "p": "3540-AD"}, {"c": "Daniel Ernesto Isturiz", "d": "6136081", "p": "8788-ZC"}, {"c": "HUMBERTO ANTONIO MEZA SERRANO", "d": "8279745", "p": "3801-YC"}, {"c": "MAYBIS EDGARLY GARCIA CEDEÑO", "d": "7756714", "p": "2831-XC"}, {"c": "JOSE MANUEL RIERA CARMONA", "d": "7845190", "p": "0772-WC"}, {"c": "FIORELLA CAROLINA DEL CARMEN BURGOS SURCO", "d": "76334196", "p": "2406-YC"}, {"c": "TOÑO PISCO DEL CASTILLO", "d": "48056327", "p": "9553-SC"}, {"c": "ROSA ANGELA MANCHAY COLONIA", "d": "75512663", "p": "1034-XC"}, {"c": "DOUGLAS ALBERTH RON HERRERA", "d": "6862990", "p": "5205-AD"}, {"c": "LUIS GERARDO FALCON MENDEZ", "d": "7261955", "p": "4195-UC"}, {"c": "YVES YOEL RIOS ESCOBAR", "d": "6657454", "p": "8315-CD"}, {"c": "GRACE IVONNE MUJICA ROJAS", "d": "9864145", "p": "5204-YC"}, {"c": "PEDRO ANTONIO CARITIMARI OCHAVANO", "d": "47157773", "p": "3495-BD"}, {"c": "ISABEL AZUCENA CASTILLO MARTINEZ (PIURA)", "d": "74298505", "p": "9986-PP"}, {"c": "ALVARO ENRIQUE ANGULO LUGO", "d": "7490206", "p": "1226-TC"}, {"c": "STEFANNY VALERIA PEREZ PACAYA", "d": "74150793", "p": "7094-WC"}, {"c": "ALVERIS JOSE MARTINEZ HERRERA", "d": "8809392", "p": "5786-CD"}, {"c": "YAVIER ALEXANDER ESPINOZA SAENZ", "d": "5421741", "p": "2687-ZC"}, {"c": "ROBERTO ENRIQUE REINA BENITEZ", "d": "4819686", "p": "6808-WC"}, {"c": "JESUS ALBERTO GONZALEZ GALARRAGA", "d": "8440508", "p": "1761-XC"}, {"c": "YULIAN ANTONIO PORLES BORJAS", "d": "74744698", "p": "8022-ZC"}, {"c": "ANTONY MALVIN LOPEZ FERNANDEZ", "d": "6868695", "p": "0903-WC"}, {"c": "MARIANGEL NAZARETH ARISTIGUETA", "d": "6547482", "p": "2038-WC"}, {"c": "HECTOR JUNIOR RIVERO OSORIO", "d": "5151362", "p": "4095-VC"}, {"c": "Gleiber Jesus Quintero Azuaje (PIURA)", "d": "3280002", "p": "7317-PP"}, {"c": "SANDRA GRISELDA TANGOA BOCANEGRA", "d": "46062072", "p": "7877-UC"}, {"c": "Yosmer jose peña puente", "d": "7232353", "p": "2245-VC"}, {"c": "DIEGO ALONSO RAFAEL PAREDES ROLDAN", "d": "73684427", "p": "7260-VC"}, {"c": "JUAN JOSE REVILLA DAMIAN", "d": "44033990", "p": "5028-SC"}, {"c": "ADRIAN STEPHANO MORENO ÑIQUEN", "d": "74231749", "p": "2001-TC"}, {"c": "ALIDA BORGES GALLARDO", "d": "7894730", "p": "7841-VC"}, {"c": "GENARO ALFONSO LEDESMA CAMPOS", "d": "77967036", "p": "2120-WC"}, {"c": "JHON FELIX ARCE DAMASO", "d": "48168461", "p": "2945-UC"}, {"c": "YUSNEIBER ANTONIO PEREZ YANEZ", "d": "8022547", "p": "2219-XC"}, {"c": "KEBERLIN PAOLA GONZALEZ CAMPUZANO", "d": "4906195", "p": "5609-XC"}, {"c": "LEYTHER RODRIGO MORALES YACILA", "d": "76340342", "p": "3546-XC"}, {"c": "SERGIO ANDRES ARMAS PACHECO", "d": "7232753", "p": "3005-YC"}, {"c": "ALEXIS OSVALDO CABREJA MARTINEZ", "d": "7841507", "p": "8857-WC"}, {"c": "JOSE MANUEL GAMARRA ALVAREZ", "d": "8661846", "p": "2708-YC"}, {"c": "VICTOR RAFAEL BENCOMO MEDINA", "d": "4980976", "p": "1282-VC"}, {"c": "LEIDY BARBARA CHACON REQUENA (MOTO CAROLINA)", "d": "7899631", "p": "6176-XC"}, {"c": "PILAR ELIZABET BERROSPI PALOMINO", "d": "43382446", "p": "3095-YC"}, {"c": "GERARDO DAVID HERNANDEZ VALERA (JJ)", "d": "5434880", "p": "0005-CD"}, {"c": "ALEJANDRO JOSE MONTES ARRIECHE", "d": "6816435", "p": "4026-WC"}, {"c": "Araziel Katiuska De La Cruz Rivera", "d": "75479634", "p": "1739-AD"}, {"c": "AZUCENA ARBOLEDA BOBADILLA", "d": "6793862", "p": "1404-AD"}, {"c": "MAX HARRYSON SANCHEZ VALLEJO (JJ)", "d": "72525042", "p": "4117-CD"}, {"c": "DEIBIS JUNIOR VILLALOBOS REVEROL", "d": "5244018", "p": "8614-YC"}, {"c": "JOSE ANTONIO JIMENEZ LEON", "d": "3468663", "p": "1089-YC"}, {"c": "ROSMER LUIS ANTONIO VALERA GARCIA", "d": "6656852", "p": "1133-VC"}, {"c": "CARLOS ROBERTO DA SILVA BARRETO", "d": "7228718", "p": "1675-YC"}, {"c": "JUAN SEBASTIÁN GALLARDO VILCHEZ (JJ)", "d": "70960154", "p": "8142-BD"}, {"c": "LUIS CARLOS RIVADENEIRA NARO", "d": "48223207", "p": "5743-ZC"}, {"c": "DIEGO JOSÉ MARÍN ISAZA", "d": "7203882", "p": "2625-YC"}, {"c": "KENNY SKEYLER MANRIQUEZ GONZALEZ (JJ)", "d": "8270251", "p": "9229-BD"}, {"c": "DIEGO ANDRE DIAZ FUNG", "d": "47550906", "p": "0619-XC"}, {"c": "GILBERTO JOSE TORRES OLANO (JJ)", "d": "7898951", "p": "5791-CD"}, {"c": "AGUSTIN ALBERTO SILVA DUICA", "d": "5272112", "p": "7242-XC"}, {"c": "BRANDER ROGER CASTRO MERCADO", "d": "76588283", "p": "6682-UC"}, {"c": "LUIS ENRIQUE ORTEGA CAMACHO", "d": "7069418", "p": "7986-VC"}, {"c": "JOEL MARTIN HAÑARI LASTRA", "d": "73675190", "p": "0066-BD"}, {"c": "David Edgardo Boza Leon", "d": "42298476", "p": "8261-VC"}, {"c": "RANDY JOSE RODRIGUEZ CENTENO (JJ)", "d": "6533721", "p": "3751-CD"}, {"c": "OLIVER DE JESUS ZAMORA SOLORZANO (lp)", "d": "6533721", "p": "2950-UC"}, {"c": "Augusto Rafael Zurita Velarde (JJ)", "d": "8871175", "p": "3958-BD"}, {"c": "KERVIN JESUS GUANIPA GUTIERREZ", "d": "4087594", "p": "6228-YC"}, {"c": "Luis Alejandro Peralta Azocar", "d": "49073414", "p": "8078-AD"}, {"c": "MOISES DE LA CRUZ GONZALEZ HERNANDEZ (GO)", "d": "3155452", "p": "8040-CD"}, {"c": "LUZ YARITA MAJUAN GARCIA", "d": "48656375", "p": "7921-CD"}, {"c": "BRIAN JOSUE ZERPA PANDARES", "d": "6143037", "p": "9639-WC"}, {"c": "Yanis Manuel Valera Rumbo", "d": "2913898", "p": "4107-XC"}, {"c": "Carlos Eduardo Fermin Valdivieso", "d": "7855247", "p": "7956-YC"}, {"c": "LEONARDO ENRIQUE NIEVES ORTA", "d": "6461573", "p": "1214-YC"}, {"c": "BRANDO DANIEL LINARES LUCENA", "d": "9095896", "p": "5747-DD"}, {"c": "ALFREDO ESPIRITU CHAPARIN", "d": "76857299", "p": "9975-AD"}, {"c": "Zuleima Gregoria Ochoa Flores", "d": "4250024", "p": "5870-WC"}, {"c": "RONNEL ALBERY BARRAI BALLESTEROS", "d": "9273218", "p": "0568-DD"}, {"c": "Isabel Calle Chumacero", "d": "70132101", "p": "0560-AD"}, {"c": "David Daniel Viloria Ocanto", "d": "8610251", "p": "7139-ZC"}, {"c": "YESSICA DESSIREE ROJAS FUENTES", "d": "6333230", "p": "2698-YC"}, {"c": "JONATHAN RAFAEL ARIAS PULIDO", "d": "7435367", "p": "3990-CD"}, {"c": "Nick Brandon Carrillo Ayala", "d": "47512460", "p": "2923-TC"}, {"c": "ARMANDO JOSE BRITO BOLIVAR", "d": "5808355", "p": "0498-VC"}, {"c": "INGRID NAYIBE APONTE APONTE", "d": "6586320", "p": "2202-AD"}, {"c": "Arelis del Carmen Vasquez", "d": "4867431", "p": "5798-YC"}, {"c": "ROSMILE ANDREINA AZUAJE ARRIECHE (JJ)", "d": "8277092", "p": "5460-BD"}, {"c": "MARCELO LEANDRO OLIVEIRA AHUANARI", "d": "75427530", "p": "8102-BD"}, {"c": "Juan Marcos Quintero Castillo", "d": "8228222", "p": "5017-AD"}, {"c": "BREINER DUVAN CARPIO MIRABAL", "d": "8422640", "p": "2593-AD"}, {"c": "EVER CALETH PINTO VILLAMIZAR", "d": "8653435", "p": "5558-YC"}, {"c": "SAMIR OMAR INFANTE TORRES", "d": "74011293", "p": "1083-TC"}, {"c": "JOSE ENRIQUE RIBEIRO FLORES", "d": "76849262", "p": "0095-WC"}, {"c": "ANDRES ALONZO MENDOZA CEBALLOS", "d": "7994178", "p": "0996-BD"}, {"c": "Roberto Rafael Sanchez Chirinos", "d": "6924275", "p": "1670-TC"}, {"c": "GABRIELA MARIA LINAREZ BLANCO", "d": "8618062", "p": "5475-ZC"}, {"c": "LINDA GIANELA VASQUEZ PANDURO", "d": "75370173", "p": "3771-AD"}, {"c": "JHENRY HUAROC MENESES", "d": "71600725", "p": "7849-ZC"}, {"c": "JOSEPH EDUARDO JIMENEZ PORRAS", "d": "7867455", "p": "2505-FD"}, {"c": "DANIEL ANDRE CABANILLAS BALLENA", "d": "74036846", "p": "2408-AD"}, {"c": "Angie Milagros Villanueva Begazo", "d": "78017390", "p": "4606-UC"}, {"c": "ROISMARI DEYSIBE PERAZA MONTERO", "d": "7282942", "p": "6145-AD"}, {"c": "ENDERSON MANUEL ALMEA FIGUEROA", "d": "8964246", "p": "7971-ZC"}, {"c": "ROSA IRENE MANRIQUE QUIROZ", "d": "80268778", "p": "8063-DD"}, {"c": "SAMUEL ALEJANDRO ROMERO TOVAR", "d": "8749835", "p": "0070-AD"}, {"c": "KATHERINE MILAGRITOS ALVARADO MALAVER", "d": "47413096", "p": "1717-DD"}, {"c": "CLEIMAR DE LOS ANGELES ROA RODRIGUEZ", "d": "8809197", "p": "0846-ED"}, {"c": "GUILLERMO ENRIQUE BORREGO VILLALOBOS", "d": "6535138", "p": "9648-CD"}, {"c": "RONALD GUILLERMO CASTILLO MACEDO", "d": "77164048", "p": "5632-BD"}, {"c": "LESLIE MARILYN VELAOCHAGA VERA", "d": "72892733", "p": "9296-RC"}, {"c": "JOSE LEANDRO BATISTA OCHOA", "d": "8130291", "p": "8215-AD"}, {"c": "DODITH TAPULLIMA SINARAHUA", "d": "7762135", "p": "6181-WC"}, {"c": "ADRIAN JOSE ACOSTA LOPEZ", "d": "4895443", "p": "1938-AD"}, {"c": "LINDA DEL PILAR PARRAGA AVILA (FERZULA)", "d": "78540528", "p": "8954-WC"}, {"c": "LEONELA COROMOTO RANGEL CALZADILLA (FERZULA)", "d": "8212390", "p": "2322-AD"}, {"c": "ROXIMIR CAROLINA CRASTO CALLES (FERZULA)", "d": "8085047", "p": "5848-ZC"}, {"c": "FRANCY RENEE JESUS BURNEO CARRASCO", "d": "70989354", "p": "4116-UC"}, {"c": "YUSBELIS DESIRET NATIVIDAD ZOA NAVAS", "d": "7747346", "p": "3052-ED"}, {"c": "JOEL GREGORIO SIMANCA SANCHEZ (ICA)", "d": "9307620", "p": "7147-AY"}, {"c": "CARLOS ENZO BARREDA POLO (ICA)", "d": "46962831", "p": "5856-AY"}, {"c": "GREIMAR ANDREINA BRICEÑO CORDERO", "d": "4962435", "p": "7507-BD"}, {"c": "DEIVERSON YHOEIBER RODRIGUEZ REYES", "d": "8926968", "p": "3871-BD"}, {"c": "VICTOR HUGO PALACIOS DIAZ", "d": "3580585", "p": "8903-AD"}, {"c": "JORGE LUIS FIGUEROA CONTRERAS", "d": "7174453", "p": "6962-DD"}, {"c": "YOEL ALEXANDER URBANO MAITA", "d": "7080728", "p": "2677-YC"}, {"c": "HENRRY ANTONIO THEIS CORDERO", "d": "6781780", "p": "3742-WC"}, {"c": "JOSE GREGORIO QUINTANA", "d": "9354223", "p": "6563-ED"}, {"c": "DURGEIDYS JOSE DIAZ NUÑEZ", "d": "7559292", "p": "9490-AD"}, {"c": "OSCAR ALEXIS GUILLEN REQUENA", "d": "8265090", "p": "0031-BD"}, {"c": "ANGELO ENRIQUE TORREALBA PAREDES", "d": "8992441", "p": "3922-DD"}, {"c": "RAMON ALEXANDER CONDE MARQUEZ", "d": "8172103", "p": "0586-WC"}, {"c": "JUDITH DEL PILAR GARCIA SAAVEDRA", "d": "74500348", "p": "8963-CD"}, {"c": "JHOSTIN DOMINIC ORTIZ SANCHEZ", "d": "74201394", "p": "9312-DD"}, {"c": "LINDA NOHELIA CEBALLOS FLERY", "d": "6187894", "p": "3730-ED"}, {"c": "DEIVERZON ELIEZER CORDERO PEÑA", "d": "8769861", "p": "7235-CD"}, {"c": "ANGEL GABRIEL GUEDEZ MARTINEZ", "d": "7209165", "p": "9383-WC"}, {"c": "JOHANA JAMILE RAMOS MUÑOZ", "d": "74154169", "p": "2682-YC"}, {"c": "FELIX RAMON CARRASQUEL MATA (G.G)", "d": "7708238", "p": "9831-XC"}, {"c": "REINER JOSUE MENDOZA ARRAIZ", "d": "9046811", "p": "6933-DD"}, {"c": "EDWIN MARCIAL ALLAIN MIRANDA", "d": "75247736", "p": "6486-ED"}, {"c": "ABBY KRISTTEL LUDEÑA AYBAR", "d": "49076374", "p": "8957-AD"}, {"c": "JONAN NOLBERTO PEÑA", "d": "6819988", "p": "7873-ZC"}, {"c": "OSCAR MAURICIO GUERRERO TENORIO", "d": "74812448", "p": "3100-ZC"}, {"c": "ORIANA MARIA VASQUEZ RIASCOS", "d": "7804290", "p": "1403-ZC"}, {"c": "GIAN FRANCO ALAYON", "d": "8263326", "p": "2414-XC"}, {"c": "RODRIGO FABIAN MORI PIZANGO (LIZ)", "d": "75391039", "p": "7372-ZC"}, {"c": "KARLA NICOL LEON CHOZO", "d": "75358187", "p": "7100-ZC"}, {"c": "GUSTAVO JOSE GREGORIO IBAÑEZ ROMERO (LIZ)", "d": "7363570", "p": "9235-XC"}, {"c": "MARINO PONCE PIZAN", "d": "71566985", "p": "6887-ED"}, {"c": "KELER ALFONSO NEGRON MEJIAS", "d": "7005793", "p": "9010-AD"}, {"c": "MARIO GABRIEL NOGUERA ORTIZ", "d": "7810092", "p": "6062-XC"}, {"c": "ALI DANIEL SENA RIVAS", "d": "5321333", "p": "8642-XC"}, {"c": "ALI RAFAEL MOYANO ALI", "d": "8034227", "p": "9636-XC"}, {"c": "RAYMON JOSUE BARRIOS GONZALEZ", "d": "7114936", "p": "1970-YC"}, {"c": "JEISSON ANDRES CARDONA BUITRAGO", "d": "8682172", "p": "0512-BD"}, {"c": "MAMERTA KATIA MIRANDA MELGAREJO", "d": "40064505", "p": "4187-AD"}, {"c": "MARIA SOLEDAD RODRIGUEZ SANCHEZ", "d": "10731627", "p": "6325-BD"}, {"c": "FERNANDO ARTURO GUILLEN MEDINA", "d": "5374226", "p": "4709-AD"}, {"c": "ERICK ELI CHAVEZ FLORES", "d": "76171213", "p": "6111-CD"}, {"c": "YILIANNY BETZABETH GREGORIA AGRAEZ MEJIAS", "d": "8006426", "p": "0164-XC"}, {"c": "IRENE GENOVEVA MONTESINOS ALCALDE", "d": "80557930", "p": "3817-CD"}, {"c": "DEYMARY FABIOLA AMAYA VALBUENA", "d": "8151123", "p": "6544-ZC"}, {"c": "ANGIE TERESA DE LA CRUZ CANDURIN", "d": "7635151", "p": "3747-XC"}, {"c": "JESUS DAVID GUANIPA SOLANO", "d": "8638941", "p": "2654-DD"}, {"c": "JEANFRAN JESUS FERNANDEZ ROMERO", "d": "4987366", "p": "6823-ZC"}, {"c": "JAIRO JOEL ALBURQUEQUE VARGAS", "d": "74901579", "p": "6325-WC"}, {"c": "WILLIAM DE JESUS HERNANDEZ LINAREZ", "d": "8458772", "p": "1541-XC"}, {"c": "EDWAR RAMON MARCANO MARCANO", "d": "5594161", "p": "9124-BD"}, {"c": "SORMAN EDEXANDER DIAZ DURAN", "d": "8848755", "p": "7196-YC"}, {"c": "LISBELIA JOSEFINA CARMONA LINARES", "d": "7072820", "p": "6772-AD"}, {"c": "ALEJANDRA GLORIA VILCHEZ ACHO", "d": "61876379", "p": "2424-ZC"}, {"c": "ABRAHAN OSCAR UZCATEGUI GARCIA", "d": "8475668", "p": "7597-XC"}, {"c": "JOHANDER MICHAEL FERNANDEZ PEREIRA", "d": "9262903", "p": "5845-ED"}, {"c": "DANIEL ALONSO SANCHEZ GUERRERO (PIURA)", "d": "40975246", "p": "1345-RP"}, {"c": "VICTOR SANTIAGO TULUMBA TANANTA", "d": "75708265", "p": "8153-VC"}, {"c": "ERICSON SANGAMA GUERRA (TARAPOTO)", "d": "74587923", "p": "4832-VS"}, {"c": "SILVANA RAQUEL ALVAN VALERA (TARAPOTO)", "d": "73503621", "p": "4399-WS"}, {"c": "WILLIANS JUVENAL MORENO GUERRA", "d": "9003236", "p": "7194-ED"}, {"c": "ALEXIS JUNIOR MONTERO BOLIVAR", "d": "4701895", "p": "7918-CD"}, {"c": "LILIANA DEL ROSARIO ALVARADO PASTRAN", "d": "8696591", "p": "6337-ED"}, {"c": "CAROLINA STEFANI SANCHEZ CARDENAS", "d": "48483504", "p": "2110-ED"}, {"c": "EDWIN JOSE MORON FRANCO", "d": "8829535", "p": "4985-AD"}, {"c": "ANGELO JOSUE BERBESI MENDEZ", "d": "7527563", "p": "4102-VC"}, {"c": "PABLO JOSE ROSALES CHAVEZ", "d": "8971191", "p": "4472-CD"}, {"c": "RUBEN DARIO MARTINEZ", "d": "7664858", "p": "2171-YC"}, {"c": "VILMA JHOSELIN MENDOZA AGUILAR", "d": "6753861", "p": "2679-UC"}, {"c": "IRVING JULIAN TELLO ZULOETA", "d": "45821429", "p": "0253-AD"}, {"c": "ELY KENNY REYTH PALACIOS ABANTO", "d": "74054616", "p": "2287-ZC"}, {"c": "DIOMAR HERNAN FERREIRA TILLERO", "d": "5198781", "p": "3514-AD"}, {"c": "JOSE MANUEL OCHOA RUSSO", "d": "3359631", "p": "1357-BD"}, {"c": "JAIME IBERICO RONDO CUBAS", "d": "74372337", "p": "5452-SC"}, {"c": "FRANCISCO ENRIQUE TORREALBA SUAREZ", "d": "6823035", "p": "7992-DD"}, {"c": "JESUS ROSALES ROSALES", "d": "8621380", "p": "9478-ED"}, {"c": "JOSWAL JESUS MATOS TOVAR", "d": "7886843", "p": "7987-BD"}, {"c": "JHENFRY DIONARDI HERNANDEZ TOVAR", "d": "8488965", "p": "4046-GD"}, {"c": "YEISON ORLANDO HERRERA SALAS", "d": "9045415", "p": "1365-CD"}, {"c": "FRANCISCO JAVIER LUGO LUGO", "d": "2489258", "p": "6837-AD"}, {"c": "YHTUMBEN VERLING RIVERO GIMENEZ", "d": "4469528", "p": "1893-ED"}, {"c": "OSCAR JOSE LOPEZ PEÑA", "d": "4256630", "p": "8913-CD"}, {"c": "LOLIVER DEL VALLE PAREDES LUCENA", "d": "4957727", "p": "2368-FD"}, {"c": "MARIELBYS MAYELA REBOLLEDO VALERA", "d": "4420562", "p": "7931-WC"}, {"c": "ANDRES ANTONIO GARCES VILLEGAS", "d": "8247777", "p": "8793-XC"}, {"c": "CARLOS ALFREDO VASQUEZ MARTINEZ", "d": "5912170", "p": "3677-CD"}, {"c": "RAFAEL ENRIQUE PERAZA MUÑOZ", "d": "8518763", "p": "4836-YC"}, {"c": "DINOSKA NATALI REYES NAVARRO", "d": "8797286", "p": "3511-DD"}, {"c": "JOSE LUIS BERMUDEZ ALVAREZ", "d": "42583783", "p": "9010-ED"}, {"c": "ANA YOLISBETH MELENDEZ CORONEL (TRUJILLO)", "d": "8782287", "p": "1346-LT"}, {"c": "LUIS DANIEL ANDRES HERRERA PAIVA", "d": "2447375", "p": "6957-BD"}, {"c": "REGORY RAFAEL PAIRA GUERRA", "d": "5280414", "p": "7618-ZC"}, {"c": "WILFRAN JOSE RIVERO URE", "d": "9232582", "p": "5589-ED"}, {"c": "JACKELYNE INES MORGAN CHUMPITASI (GG)", "d": "75083296", "p": "5209-AD"}, {"c": "MARIANGEL ELIZABETH SILVA GIMENEZ", "d": "8205884", "p": "3896-ED"}, {"c": "ABEL RULEN MONZON CONTRERAS", "d": "76634795", "p": "2405-DD"}, {"c": "YIRBER ALEXANDER ROMERO URBANO", "d": "4569851", "p": "7619-DD"}, {"c": "ELIZABETH RUTH CHAUPIS GUTIERREZ", "d": "42055243", "p": "3413-ED"}, {"c": "YAMYTH ALEXANDER CUESTA PEREA", "d": "7573605", "p": "4431-ED"}, {"c": "EDGAR MITCHEL MONTEZA MELENDEZ", "d": "8869833", "p": "3774-BD"}, {"c": "LUIS ALEJANDRO CORTES DEU", "d": "4925355", "p": "0602-ED"}, {"c": "KENDRY JOSE BRACAMONTE NEGRETTE", "d": "4674547", "p": "6821-DD"}, {"c": "KLEIVER ADRIAN COLINA GANDICA", "d": "8715400", "p": "0417-DD"}, {"c": "JHERMY ANDRE SALCEDO CUENCA", "d": "72705053", "p": "8214-ED"}, {"c": "CARLOS ENRIQUE ANTONIO TORRES (ICA)", "d": "60546982", "p": "4118-AY"}, {"c": "MAYRA LISBETH FLORES PAZOS (ICA)", "d": "48030397", "p": "2767-AY"}, {"c": "JUAN JESUS CUEVA ORE ICA)", "d": "43696195", "p": "6385-AY"}, {"c": "JOSE LUIS CEDEÑO SILVA (ICA)", "d": "6192388", "p": "1588-AY"}, {"c": "CRISTHIAN JEFFERSON CORDOVA GARCIA (ICA)", "d": "47168906", "p": "2744-AY"}, {"c": "FRANCINI NICOLE QUISPE VILCA (ICA)", "d": "75023965", "p": "6866-AY"}, {"c": "JHON WILLIAM GARCIA QUISPE (TRUJILLO)", "d": "80524089", "p": "5329-KT"}, {"c": "ANGEL ENRIQUE GONZALES MARQUEZ", "d": "8886304", "p": "6416-AD"}, {"c": "GERSON KAZU RAMIREZ ROSAS (TRUJILLO)", "d": "70941724", "p": "5917-KT"}, {"c": "Dilan  stiven Hernandez vargas (TRUJILLO)", "d": "8602877", "p": "5978-KT"}, {"c": "JESUS ALEJANDRO MORENO ZAMBRANO (TRUJILLO)", "d": "7994398", "p": "1779-LT"}, {"c": "MARLON ABRAHAM CORDOVA OTERO (TRUJILLO)", "d": "48391756", "p": "1750-LT"}, {"c": "KEREN NAIRUBYS BELISARIO GRATEROL (TRUJILLO)", "d": "6406702", "p": "4915-KT"}, {"c": "YULI MARICRUZ ANGULO GUZMAN (TRUJILLO)", "d": "75501939", "p": "3088-LT"}, {"c": "NIOVYS JOSE FERMIN GARCIA (TRUJILLO)", "d": "8202201", "p": "1472-LT"}, {"c": "ANTONY WILLIANS LUJAN VILLANUEVA (TRUJILLO)", "d": "48381488", "p": "1082-LT"}, {"c": "GUSTAVO MIGUEL PERDOMO MENDOZA (trujillo)", "d": "9085621", "p": "4916-KT"}, {"c": "YENIFER PAOLA ASPRILLA VALENCIA", "d": "6879725", "p": "4231-ED"}, {"c": "TEOLINDA SINARAHUA SINARAHUA (TARAPOTO)", "d": "77661649", "p": "4465-XS"}, {"c": "JESUS JAVIER GUEVARA GRATEROL", "d": "6907967", "p": "4454-AD"}, {"c": "TANIA VERONICA SALAS LOPEZ (TARAPOTO)", "d": "71890967", "p": "3504-XS"}, {"c": "MERLYS CAROLINA TAMAYO OLIVO", "d": "9346494", "p": "9687-FD"}, {"c": "EDUARDO ALTUNA MORE (PIURA)", "d": "2895294", "p": "6644-SP"}, {"c": "DEIVY JOSE MEDINA RAMOS", "d": "8895116", "p": "8155-FD"}, {"c": "WILLIAM STIWAR ESCALANTE PEREZ (GG)", "d": "8159812", "p": "0245-CD"}, {"c": "MAXIMILIANA CUSI CASANCA", "d": "41413132", "p": "2456-ZC"}, {"c": "ROBERT MARTIN ALTUVE MARQUEZ (GG)", "d": "8933545", "p": "2132-CD"}, {"c": "MARK ALESSANDRO ARANA SOMONTES", "d": "75510214", "p": "7481-CD"}, {"c": "YULEIMA MILAGROS ESCALONA ABREU", "d": "8258252", "p": "5794-CD"}, {"c": "GENESYS MARIA FLORES ROMERO", "d": "9085752", "p": "9422-ED"}, {"c": "YOISMAR DEL CARMEN ROMERO PAREDES", "d": "6282522", "p": "0846-ZC"}, {"c": "DAYANA MILAGROS PRADO RUIZ", "d": "8028171", "p": "5329-BD"}, {"c": "REINALDO JESUS GIL VARGAS", "d": "8092814", "p": "6841-BD"}, {"c": "ALBERT JOSE SUPERLANO RAMIREZ", "d": "8182377", "p": "5300-ED"}, {"c": "ZORELYS MARITZA BOLIVAR VILLEGAS", "d": "8147257", "p": "6369-DD"}, {"c": "YULIETH BETANIA BERMUDEZ FERNANDEZ", "d": "6478543", "p": "1057-AD"}, {"c": "SANTIAGO ANTONIO ESPINOZA RAYMUNDO", "d": "70026612", "p": "1965-FD"}, {"c": "MARIA MILAGROS CALDERON ESCOBAR", "d": "78104729", "p": "1430-GD"}, {"c": "LUIS ANTONIO ALEJOS ANGELES", "d": "75586659", "p": "2366-GD"}, {"c": "IBRAYAN ADRIAN ALVAREZ TOVAR", "d": "5968614", "p": "3264-DD"}, {"c": "LUIS ENRIQUE SANTIBAÑEZ TEJADA", "d": "73575370", "p": "3261-FD"}, {"c": "BARBARA YOSINETH ESPINOZA MARQUEZ", "d": "5317516", "p": "4785-ED"}, {"c": "ELION SALVADOR MACEDO BENITO", "d": "70977100", "p": "7954-DD"}, {"c": "JORDY NABODIN MOLINA SANCHEZ", "d": "6268891", "p": "9611-ED"}, {"c": "GABRIEL MOISES VARAS LAZARO (TRUJILLO)", "d": "74953014", "p": "5826-KT"}, {"c": "KIMBERLY ALISON CORDOVA NIÑO", "d": "73979909", "p": "0840-GD"}, {"c": "DANNY JOSE CUMACHINA GONZALEZ", "d": "6814682", "p": "4891-HD"}, {"c": "LUIS ADRIAN RODRIGUEZ SILVA", "d": "9017923", "p": "0172-BD"}, {"c": "MAIKOL ALEJANDRO CORTEZ HERRERA", "d": "8310597", "p": "2705-BD"}];
+window.ejecutadosData = EJECUTADOS_DATA;
+window.ejecutadosCargado = true;
+
+function normalizarPlaca(p) {
+  const clean = (p || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  if (clean.length >= 6) return clean.slice(0, 4) + '-' + clean.slice(4, 6);
+  return (p || '').trim().toUpperCase();
+}
+
+async function cargarEjecutados() {
+  if (window.ejecutadosCargado) return;
+  try {
+    const resp = await fetch('https://raw.githubusercontent.com/GOBOT-LEG/GOBOT/main/ESTADO%20CLIENTES%20CRITICOS%20FINAL%20PUBLICO.csv');
+    const text = await resp.text();
+    const rows = text.replace(/\r/g,'').replace(/^\uFEFF/,'').split('\n').map(r => r.split(';'));
+    const headers = rows[0];
+    const iCliente = headers.findIndex(h => h.trim().toUpperCase().includes('CLIENTES'));
+    const iDoi = headers.findIndex(h => h.trim().toUpperCase().includes('DOI'));
+    const iPlaca = headers.findIndex(h => h.trim().toUpperCase().includes('PLACA'));
+    const iFavor = headers.findIndex(h => h.trim().toUpperCase().includes('FAVOR'));
+    const iProv = headers.findIndex(h => h.trim().toUpperCase().includes('PROVINCIA'));
+    const iEstado = headers.findIndex(h => h.trim().toUpperCase().includes('ESTADO REGISTRAL'));
+
+    window.ejecutadosData = rows.slice(1).filter(r => r.length >= 3 && (r[iCliente] || '').trim()).map(r => ({
+      c: (r[iCliente] || '').trim(),
+      d: (r[iDoi] || '').trim(),
+      p: normalizarPlaca((r[iPlaca] || '').trim()),
+      f: iFavor >= 0 ? (r[iFavor] || '').trim() : '',
+      prov: iProv >= 0 ? (r[iProv] || '').trim() : '',
+      er: iEstado >= 0 ? (r[iEstado] || '').trim() : ''
+    })).filter(r => r.c);
+
+    window.ejecutadosCargado = true;
+    console.log('Ejecutados cargados:', window.ejecutadosData.length);
+  } catch(e) {
+    console.error('Error cargando ejecutados:', e);
+  }
+}
+
+window.buscarEjecutados = function() {
+  // Sincronizar inputs
+  const v1 = document.getElementById('exec-input')?.value || '';
+  const v2 = document.getElementById('ejecutados-search')?.value || '';
+  const raw = (v1 || v2).trim();
+  // Sincronizar valores entre inputs
+  if (v1 && !v2 && document.getElementById('ejecutados-search')) document.getElementById('ejecutados-search').value = v1;
+  if (v2 && !v1 && document.getElementById('exec-input')) document.getElementById('exec-input').value = v2;
+  // Obtener todos los divs de resultado
+  const divs = ['exec-resultado', 'ejecutados-resultado'].map(id => document.getElementById(id)).filter(Boolean);
+  if (divs.length === 0) { console.warn('No se encontró div de resultado'); return; }
+  const res = divs[0];
+  if (!raw) { res.innerHTML = ''; return; }
+
+  if (window.ejecutadosData.length === 0) {
+    res.innerHTML = '<p style="font-size:13px;color:#d42b2b;">No se pudieron cargar los datos.</p>';
+    return;
+  }
+
+  const qNombre = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const qDoi = raw.replace(/[^0-9]/g,'');
+  const qPlaca = raw.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+
+  const filtered = window.ejecutadosData.filter(r => {
+    // Solo mostrar INSCRITO para Clientes Ejecutados
+    const estado = (r.er || '').toUpperCase().trim();
+    if (estado && estado !== 'INSCRITO') return false;
+    const nombre = r.c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const doi = r.d.replace(/[^0-9]/g,'');
+    const placa = r.p.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+    return (qNombre.length >= 3 && nombre.includes(qNombre)) ||
+           (qDoi.length >= 3 && doi.includes(qDoi)) ||
+           (qPlaca.length >= 3 && placa.includes(qPlaca));
+  });
+
+  if (filtered.length === 0) {
+    res.innerHTML = '<p style="font-size:13px;color:var(--text2);">No se encontró ningún cliente con ese criterio.</p>';
+    return;
+  }
+
+  let html = filtered.length > 1 ? `<p style="font-size:12px;color:var(--text2);margin-bottom:8px;">${filtered.length} resultado(s):</p>` : '';
+  filtered.forEach(r => {
+    html += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">
+      <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:var(--text);">${r.c}</p>
+      <p style="font-size:12px;margin:0;color:var(--text2);">DOI: <strong>${r.d}</strong> &nbsp;·&nbsp; Placa: <strong>${r.p}</strong>${r.f ? ' · A favor de: ' + r.f : ''}</p>
+    </div>`;
+  });
+  res.innerHTML = html;
+}
+
+window.filtrarEjecutados = function() { window.buscarEjecutados(); }
+
+window.abrirBuscadorEjecutados = function() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-ejecutados').classList.add('active');
+  setTimeout(() => {
+    const inp = document.getElementById('exec-input');
+    if (inp) inp.focus();
+  }, 100);
+}
+
+// Listener del botón buscar en pantalla ejecutados
+document.addEventListener('DOMContentLoaded', function() {
+  // Pantalla dedicada
+  const btn = document.getElementById('exec-btn');
+  const inp = document.getElementById('exec-input');
+  if (btn) btn.addEventListener('click', window.buscarEjecutados);
+  if (inp) inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') window.buscarEjecutados();
+  });
+
+  // Buscador inline EJECUTADOS — solo INSCRITO
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'ejec-inline-input') {
+      const raw = e.target.value.trim();
+      const res = document.getElementById('ejec-inline-resultado');
+      if (!res) return;
+      if (raw.length < 3) { res.innerHTML = ''; return; }
+      if (window.ejecutadosData.length === 0) {
+        res.innerHTML = '<p style="font-size:13px;color:#d42b2b;">Cargando datos...</p>';
+        return;
+      }
+      const qN = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const qD = raw.replace(/[^0-9]/g,'');
+      const qP = raw.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+      const filtered = window.ejecutadosData.filter(r => {
+        // Solo mostrar INSCRITO
+        const estado = (r.er || '').toUpperCase().trim();
+        if (estado && estado !== 'INSCRITO') return false;
+        const n = r.c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const d = r.d.replace(/[^0-9]/g,'');
+        const p = r.p.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+        return (qN.length>=3 && n.includes(qN)) || (qD.length>=3 && d.includes(qD)) || (qP.length>=3 && p.includes(qP));
+      });
+      if (filtered.length === 0) {
+        res.innerHTML = '<p style="font-size:13px;color:var(--text2);">No se encontró ningún cliente con ese criterio.</p>';
+        return;
+      }
+      let html = filtered.length > 1 ? `<p style="font-size:12px;color:var(--text2);margin-bottom:8px;">${filtered.length} resultado(s):</p>` : '';
+      filtered.forEach(r => {
+        html += `<div style="background:#e8eef5;border:1px solid #c8d6e5;border-radius:10px;padding:12px 14px;margin-bottom:8px;">
+          <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:#0d1b2e;">${r.c}</p>
+          <p style="font-size:12px;margin:0;color:#3a5070;">DOI: <strong>${r.d}</strong> &nbsp;·&nbsp; Placa: <strong>${r.p}</strong>${r.f ? ' · A favor de: ' + r.f : ''}</p>
+        </div>`;
+      });
+      res.innerHTML = html;
+    }
+  });
+
+  // Buscador inline MOTOS DISPONIBLES — INSCRITO + EN CALIFICACIÓN, muestra estado registral
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'motos-inline-input') {
+      const raw = e.target.value.trim();
+      const res = document.getElementById('motos-inline-resultado');
+      if (!res) return;
+      if (raw.length < 3) { res.innerHTML = ''; return; }
+      if (window.ejecutadosData.length === 0) {
+        res.innerHTML = '<p style="font-size:13px;color:#d42b2b;">Cargando datos...</p>';
+        return;
+      }
+      const qN = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const qD = raw.replace(/[^0-9]/g,'');
+      const qP = raw.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+      const filtered = window.ejecutadosData.filter(r => {
+        // Mostrar INSCRITO y EN CALIFICACIÓN, solo LIMA
+        const estado = (r.er || '').toUpperCase().trim();
+        const zona = (r.prov || '').toUpperCase().trim();
+        if (zona && zona !== 'LIMA') return false;
+        if (estado && estado !== 'INSCRITO' && !estado.includes('CALIFICACION') && !estado.includes('CALIFICACIÓN')) return false;
+        const n = r.c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const d = r.d.replace(/[^0-9]/g,'');
+        const p = r.p.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+        return (qN.length>=3 && n.includes(qN)) || (qD.length>=3 && d.includes(qD)) || (qP.length>=3 && p.includes(qP));
+      });
+      if (filtered.length === 0) {
+        res.innerHTML = '<p style="font-size:13px;color:var(--text2);">No se encontró ninguna moto con ese criterio.</p>';
+        return;
+      }
+      let html = filtered.length > 1 ? `<p style="font-size:12px;color:var(--text2);margin-bottom:8px;">${filtered.length} resultado(s):</p>` : '';
+      filtered.forEach(r => {
+        const estadoColor = (r.er || '').toUpperCase().includes('INSCRITO') ? '#27ae60' : '#e67e22';
+        const estadoLabel = r.er || 'Sin estado';
+        html += `<div style="background:#fdf2e9;border:1px solid #f0c49b;border-radius:10px;padding:12px 14px;margin-bottom:8px;">
+          <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:#0d1b2e;">${r.c}</p>
+          <p style="font-size:12px;margin:0 0 6px;color:#3a5070;">DOI: <strong>${r.d}</strong> &nbsp;·&nbsp; Placa: <strong>${r.p}</strong>${r.f ? ' · A favor de: ' + r.f : ''}</p>
+          <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:${estadoColor};">${estadoLabel}</span>
+        </div>`;
+      });
+      res.innerHTML = html;
+    }
+  });
+});
+
+// Cargar ejecutados al cualquier clic que muestre ese apartado
+document.addEventListener('click', function() {
+  setTimeout(function() {
+    const container = document.getElementById('ejecutados-container');
+    const search = document.getElementById('ejecutados-search');
+    if (container && search && window.ejecutadosData.length === 0) {
+      cargarEjecutados();
+    }
+  }, 150);
+});
+
+// Precargar ejecutados al inicio
+window.addEventListener('load', function() {
+  setTimeout(cargarEjecutados, 500);
+});
+
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('back-btn').classList.toggle('visible', id!=='home');
+}
+
+function goBack() {
+  if (!hist.length) return;
+  const prev = hist.pop();
+  if (prev==='home') { showScreen('home'); document.getElementById('back-btn').classList.remove('visible'); }
+  else if (prev.startsWith('area:')) openArea(prev.replace('area:',''), false);
+  else if (prev.startsWith('sub:')) openCategory(prev.replace('sub:',''), false);
+}
+
+function openCategory(catId, push=true) {
+  if (push) hist.push('area:' + (window.currentArea || 'legal'));
+  const cat = CATS.find(c=>c.id===catId);
+  document.getElementById('sub-icon').textContent = cat.icon;
+  document.getElementById('sub-title').textContent = cat.title;
+  const list = document.getElementById('subcategory-list');
+  list.innerHTML = '';
+  cat.items.forEach((item,idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'subcategory-btn';
+    btn.innerHTML = `<span>${item.q}</span><span class="arrow">→</span>`;
+    btn.onclick = () => openAnswer(catId, idx);
+    list.appendChild(btn);
+  });
+  showScreen('sub');
+}
+
+function openAnswer(catId, idx, push=true) {
+  if (push) hist.push('sub:'+catId);
+  const cat = CATS.find(c=>c.id===catId);
+  const item = cat.items[idx];
+  document.getElementById('answer-label').textContent = cat.title;
+  document.getElementById('answer-question').textContent = item.q;
+  // Convierte URLs planas en links clickeables (sin tocar las que ya están en <a>)
+  function linkify(html) {
+    return html.replace(/(<a\s[^>]*>.*?<\/a>)|(https?:\/\/[^\s<"']+)/gi, function(match, existingLink, url) {
+      if (existingLink) return existingLink;
+      return '<a href="' + url + '" target="_blank" style="color:var(--accent);word-break:break-all;">' + url + '</a>';
+    });
+  }
+  document.getElementById('answer-content').innerHTML = linkify(item.a);
+  showScreen('answer');
+}
+
+// AI GUIDE
+
+// Búsqueda dinámica: revisa TODOS los items de TODAS las categorías
+function dynamicSearch(query) {
+  const stopWords = new Set(['el','la','los','las','un','una','de','del','en','que','por','para','con','se','su','al','es','no','si','mi','me','ya','lo','le','hay','como','mas','pero','fue','ser','son','tiene','puede','esta','este','esto','esos','esas','muy','sin','sobre','entre','cuando','donde','porque','cual','quien','ser','han','ha','he','hemos','estan','estos','estas','todo','toda','todos','todas','otro','otra','otros','otras','eso','esa','ese','tan','nos','les','ese','esos','solo','asi','aqui','alla','ahi','dio','dan','dar','van','ver','hoy','dia','vez','dos','tres','hizo','hace','hacer','cual','cuales','pues','bien','mal','cada','nada','algo','algun','alguna','mucho','poco','unos','unas']);
+  
+  // Stemming básico español: quitar sufijos comunes
+  function stem(w) {
+    if (w.length <= 3) return w;
+    return w
+      .replace(/(iones|cion|cion|ando|endo|aron|eron|ando|iendo|mente|idad|idades|able|ables|ible|ibles|ista|istas|oso|osa|osos|osas|amiento|imientos)$/,'')
+      .replace(/(ado|ada|ados|adas|ido|ida|idos|idas)$/,'')
+      .replace(/(ar|er|ir|aba|aban|ían|ieron|amos|emos|imos)$/,'')
+      .replace(/(es|as|os)$/,'')
+      .replace(/(ó|ió|ía)$/,'')
+      || w;
+  }
+
+  function norm(text) {
+    return (text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+
+  // Sinónimos: palabras que la gente usa → palabras que están en el Sheet
+  const SYNONYMS = {
+    'vehiculo':'moto', 'movilidad':'moto', 'unidad':'moto', 'motorizado':'moto', 'motocicleta':'moto',
+    'esposo':'conyuge', 'esposa':'conyuge', 'marido':'conyuge', 'mujer':'conyuge', 'pareja':'conyuge',
+    'casados':'casado', 'casada':'casado', 'matrimonio':'casado',
+    'novios':'convivientes', 'enamorados':'convivientes', 'novio':'convivientes', 'novia':'convivientes',
+    'deposito':'cuenta', 'transferencia':'cuenta', 'pagar':'pago', 'cobrar':'pago',
+    'precio':'costo', 'tarifa':'costo', 'cuanto':'costo', 'cobran':'costo', 'vale':'costo',
+    'roto':'deteriorado', 'manchado':'deteriorado', 'danado':'deteriorado', 'rayado':'deteriorado', 'ilegible':'deteriorado',
+    'perdio':'perdido', 'extraviado':'perdido', 'robo':'perdido', 'robaron':'perdido',
+    'vencio':'vencido', 'caduco':'vencido', 'caducado':'vencido',
+    'cancelo':'desistir', 'cancelar':'desistir', 'anular':'desistir', 'arrepintio':'desistir', 'devolver':'desistir', 'salirse':'desistir',
+    'plataforma':'firmalo', 'digital':'firmalo', 'electronica':'firmalo', 'app':'firmalo', 'link':'firmalo', 'aplicativo':'firmalo',
+    'inspector':'tive', 'verificacion':'tive', 'inspeccion':'tive', 'verificar':'tive',
+    'legalizacion':'notaria', 'legalizar':'notaria', 'legalizado':'notaria', 'notario':'notaria',
+    'moroso':'ejecutado', 'mora':'ejecutado', 'inscrito':'ejecutado', 'inscripcion':'ejecutado',
+    'cuotas':'cronograma', 'pagos':'cronograma', 'mensualidad':'cronograma', 'mensualidades':'cronograma',
+    'seguro':'soat', 'poliza':'soat',
+    'autorizar':'entrega', 'autorizacion':'entrega', 'entregar':'entrega', 'despacho':'entrega', 'despachar':'entrega',
+    'razon':'ruc', 'empresa':'ruc', 'empresas':'ruc',
+    'incluir':'agregar', 'anadir':'agregar', 'meter':'agregar', 'incorporar':'agregar',
+    'sacar':'retirar', 'quitar':'retirar', 'eliminar':'retirar', 'borrar':'retirar',
+    'discapacidad':'validar', 'analfabeta':'validar', 'analfabeto':'validar', 'sindrome':'validar', 'testigo':'validar',
+    'seguimiento':'go track', 'tracking':'go track', 'rastrear':'go track', 'rastreo':'go track', 'estado solicitud':'go track',
+  };
+
+  // Boost por categoría: keywords extra que apuntan a una categoría específica
+  const CAT_BOOST = {
+    'tive': ['tive','inspeccion','verificacion','copropietario','conyuge','casado','soltero','conviviente','separacion','patrimonios','sunarp','inscribio','figuro','aparecio','salio'],
+    'agregar': ['agregar','quitar','retirar','incluir','sacar','anadir','incorporar','credito'],
+    'dni': ['dni','documento','identidad','carnet','extranjeria','vencido','deteriorado','roto','perdido','extraviado','ce'],
+    'contrato': ['firmalo','keynua','desistir','go track','seguimiento','cancelar','inicial','50%','plataforma'],
+    'moto': ['moto','vehiculo','entrega','unidad','distinto','diferente','cambio','boleta','autorizar','despacho','sigm'],
+    'costos': ['costo','precio','cuanto','tarifa','pago','deposito','coopac','cuenta','interbank','cci','monto','cobra','legalizacion'],
+    'notarias': ['notaria','notarias','firma','garantia','presencial','legalizacion','testigo','discapacidad','analfabeta','validar','quintanilla','camacho'],
+    'cronograma': ['cronograma','cuota','cuotas','soat','seguro','error','incorrecto','pagos','mensualidad'],
+    'ruc': ['ruc','razon social','empresa','global go','coopac','factoring','naisa'],
+    'motos_venta': ['moto','venta','disponible','estado registral','calificacion','inscrito','comercial','vehiculo'],
+  };
+
+  // Expandir query con sinónimos
+  const rawWords = query.split(/\s+/).filter(w => w.length >= 2 && !stopWords.has(w));
+  if (rawWords.length === 0) return null;
+
+  // Crear set expandido: palabra original + stem + sinónimo
+  const searchTerms = [];
+  rawWords.forEach(w => {
+    searchTerms.push(w);
+    const st = stem(w);
+    if (st !== w && st.length >= 3) searchTerms.push(st);
+    if (SYNONYMS[w]) searchTerms.push(SYNONYMS[w]);
+    if (SYNONYMS[st]) searchTerms.push(SYNONYMS[st]);
+  });
+  // Deduplicar
+  const terms = [...new Set(searchTerms)];
+
+  let best = null;
+  let bestScore = 0;
+
+  CATS.forEach(cat => {
+    if (cat.id === 'ejecutados') return;
+
+    // Calcular boost de categoría
+    let catBoost = 0;
+    const boostKeys = CAT_BOOST[cat.id] || [];
+    terms.forEach(t => {
+      if (boostKeys.some(bk => bk.includes(t) || t.includes(bk))) catBoost += 2;
+    });
+
+    cat.items.forEach((item, idx) => {
+      const qNorm = norm(item.q);
+      const aNorm = norm((item.a || '').replace(/<[^>]*>/g,' '));
+      const fullText = qNorm + ' ' + aNorm;
+
+      let score = 0;
+      let matchedTerms = 0;
+
+      terms.forEach(t => {
+        if (qNorm.includes(t)) {
+          score += t.length * 3; // pregunta vale x3
+          matchedTerms++;
+        } else if (aNorm.includes(t)) {
+          score += t.length; // respuesta vale x1
+          matchedTerms++;
+        }
+        // Partial match: si el stem coincide parcialmente en la pregunta
+        const st = stem(t);
+        if (st.length >= 3 && st !== t) {
+          if (qNorm.includes(st) && !qNorm.includes(t)) {
+            score += st.length * 2;
+            matchedTerms++;
+          } else if (aNorm.includes(st) && !aNorm.includes(t)) {
+            score += st.length * 0.5;
+            matchedTerms++;
+          }
+        }
+      });
+
+      // Agregar boost de categoría
+      score += catBoost;
+
+      // Bonus si múltiples términos coinciden (relevancia compuesta)
+      if (matchedTerms >= 2) score *= 1 + (matchedTerms * 0.15);
+
+      const matchRatio = matchedTerms / rawWords.length;
+      if (matchedTerms >= 1 && matchRatio >= 0.25 && score > bestScore) {
+        bestScore = score;
+        best = { cat, item, idx, catId: cat.id };
+      }
+    });
+  });
+
+  return bestScore >= 5 ? best : null;
+}
+
+// Helper: busca item por contenido de pregunta (no por posicion)
+function resolveItem(catId, idx, qMatch) {
+  const cat = CATS.find(c => c.id === catId);
+  if (!cat || !cat.items || cat.items.length === 0) return { cat: null, item: null, idx: -1 };
+  if (qMatch) {
+    const qm = qMatch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const found = cat.items.findIndex(it => it.q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(qm));
+    if (found >= 0) return { cat, item: cat.items[found], idx: found };
+  }
+  if (idx >= 0 && idx < cat.items.length) return { cat, item: cat.items[idx], idx };
+  return { cat, item: cat.items[0], idx: 0 };
+}
+
+function askAI() {
+  const input = document.getElementById('ai-input');
+  const raw = input.value.trim();
+  const q = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (!q) return;
+  const resp = document.getElementById('ai-response');
+  resp.className = 'ai-response visible';
+
+  // Mapa de palabras clave por categoria y subtema
+  const RULES = [
+    { catId:'tive', idx:0, qMatch:'casada', keys:['casado','casada','conyuge no figuro','conyuge no salio','no salio el conyuge','no salió','pareja casada','matrimonio tive','tive casado','tive observada casado','no aparecio conyuge','conyuge falta','falta conyuge en tive','le falta el conyuge','no esta el conyuge','no figura conyuge','esposo no salio','esposa no salio','marido no salio','esposo no figura','esposa no figura','esposos','esposo','esposa','marido','mujer del cliente','pareja tive','tive esposo','tive esposa','tive marido','solo uno de los esposos','falta esposo','falta esposa','solo salio uno de los casados','solo figura uno de los casados'] },
+    { catId:'tive', idx:1, qMatch:'soltero en dni', keys:['soltero tive','soltera tive','tive conyuge','aparecio conyuge','aparecio su conyuge','no dijo casado','no nos dijo','salio conyuge','salio con conyuge','dni soltero conyuge','salio casado','figura casado','aparecio esposo','aparecio esposa','no informo que era casado','no informo que estaba casado','no nos informo','no sabiamos que era casado','era soltero pero salio casado','dijo ser soltero','registro como soltero'] },
+    { catId:'tive', idx:2, qMatch:'copropietarios', keys:['copropietario','dos personas','dos solteros','conviviente','familiar','amigo','solo uno','solo salio uno','solo figuro uno','salio solo uno','no salio el otro','no aparecio el otro','falta uno en tive','solo figura uno'] },
+    { catId:'tive', idx:3, qMatch:'convivientes', keys:['convivientes','declaro casado','en realidad no son casados','no son casados','son convivientes','eran convivientes','no estan casados','dijeron que eran casados','novios','son novios','enamorados','son enamorados','no son esposos','no estan casados','solo son pareja','pareja sin casarse','pareja no casada','no tienen matrimonio','union de hecho'] },
+    { catId:'tive', idx:4, qMatch:'separacion de patrimonios', keys:['separacion de patrimonios','separacion patrimonios','separados de bienes','tienen separacion','patrimonios separados'] },
+    { catId:'agregar', idx:0, qMatch:'retirar', keys:['retirar','quitar','sacar del credito','quien se puede retirar','se puede quitar','como quito','como retiro','eliminar del credito','borrar del credito','dar de baja del credito'] },
+    { catId:'agregar', idx:1, qMatch:'agrega', keys:['agregar','anadir','incluir al credito','agregar al credito','quiere agregar','conyuge al credito','sumar al credito','meter al credito','poner al credito','como agrego','incorporar','añadir al credito','agregar a su esposo','agregar a su esposa','agregar a su conyuge','incluir conyuge','quiere meter a su esposa','quiere meter a su esposo','quiere incluir','no informo que estaba casado','no nos dijo que era casado','era soltero y quiere agregar'] },
+    { catId:'dni', idx:0, qMatch:'vencido', keys:['vencido','vencio','esta vencido','dni vencido','ce vencido','documento vencido','vencido firmar','vencido contrato','dni vence','caducado','dni caducado','venció','documento vence','le vencio','le venció','su dni vencio','pasado de fecha','fecha vencida','doc vencido','carnet vencido','dni esta vencido','tiene el dni vencido','vencio su dni'] },
+    { catId:'dni', idx:1, qMatch:'deteriorado', keys:['roto','deteriorado','manchado','rayado','dañado','danado','maltratado','en mal estado','esta roto','esta deteriorado','dni roto','dni deteriorado','documento roto','doc roto','se rompio','se daño','no se lee','ilegible','dni ilegible','carnet roto','le rompio','esta feo el dni'] },
+    { catId:'dni', idx:2, qMatch:'perdido', keys:['perdido','extraviado','no tiene dni','sin dni','perdio dni','perdió dni','perdio su dni','lo perdio','lo perdió','extravió','no lo encuentra','no encuentra su dni','le robaron','robo del dni','no tiene documento','no tiene carnet','sin documento'] },
+    { catId:'cronograma', idx:0, qMatch:'cronograma', keys:['cronograma error','cronograma malo','cronograma incorrecto','cuotas mal','pagos incorrectos','cronograma equivocado','cuotas incorrectas','cuotas erradas','cronograma esta mal','no coincide cronograma','monto incorrecto','cuota incorrecta','no quiere firmar cronograma','cronograma no cuadra'] },
+    { catId:'cronograma', idx:1, qMatch:'soat', keys:['soat','seguro','no figura soat','soat contrato','soat no esta','falta soat','no incluyo soat','no tiene soat','soat no aparece','seguro no figura','no salio el soat'] },
+    { catId:'contrato', idx:0, qMatch:'firmalo', keys:['firmalo','keynua','no puede firmar','no firma digital','plataforma no funciona','no le llega','no recibe','error en firmalo','no funciona firmalo','no puede firmar digital','problema con firma','firma electronica no funciona','no firma por app','no le llega el link','link no funciona'] },
+    { catId:'contrato', idx:1, qMatch:'desistir', keys:['desistir','desiste','desistimiento','no quiere credito','cancelar credito','50%','inicial','quiere salirse','quiere cancelar','ya no quiere','se arrepintio','se arrepintió','no quiere la moto','quiere devolver','devolver credito','anular credito','salirse del credito'] },
+    { catId:'moto', idx:0, qMatch:'entrega', keys:['entrega moto','autorizar entrega','no autorizan','ya firmo garantia','cuando entregan','no le dan la moto','no entregan','cuando le dan la moto','ya firmo y no le dan','firmo y no entregan','cuanto demora entrega','sigm','no aparece en sigm','cuando autoriza','cuando dan la moto','cuanto demora','ya firmo y nada','esperar entrega','plazo entrega','cuanto tiempo demora la entrega','cuando puedo entregar','cuando puedo dar la moto'] },
+    { catId:'costos', idx:0, qMatch:'cuesta', keys:['costo garantia','cuanto cuesta garantia','precio legalizacion','nueva legalizacion','legalizar garantia','cuanto es','cuanto cobran','precio garantia','tarifa garantia','cuanto pago','cuanto se paga','monto garantia'] },
+    { catId:'moto', idx:1, qMatch:'distinto', keys:['vehiculo distinto','moto distinta','cambio de unidad','otra moto','vehiculo diferente','moto diferente','boleta diferente','le dieron otra moto','moto incorrecta','equivocaron la moto','moto equivocada','entregaron otra','entregaron moto distinta','moto no coincide','no es la misma moto','cambiaron la moto','cambio de moto','cambio de vehiculo'] },
+    { catId:'notarias', idx:0, qMatch:'no validar', keys:['firma garantia','firmar garantia','garantia provincia','no pudo firmar garantia','no quiso firmar','notaria no valido','no validar firma','firma en provincia','firmar en provincia','garantia notaria','firma notaria','firmar notaria','no firmaron garantia','problema firma garantia','rechazo firma','no aceptaron firma','testigo firma'] },
+    { catId:'notarias', idx:0, qMatch:'quintanilla', keys:['notaria quintanilla','notaria lima','notaria aliada lima','quintanilla','datos notaria lima','cuenta notaria'] },
+    { catId:'costos', idx:0, qMatch:'cuesta', keys:['coopac cuenta','datos coopac','cuenta coopac','numero cuenta provincia','cuenta de coopac','interbank coopac','cci coopac','depositar coopac','cuenta provincia','numero cuenta','cci coopac'] },
+    { catId:'notarias', idx:2, qMatch:null, keys:['notaria provincia','notarias provincia','costo provincia notaria','notarias de provincia','cuanto cobra notaria provincia'] },
+    { catId:'_pareja', idx:-1, keys:['pareja','su pareja','la pareja','del cliente pareja','tive pareja','pareja del cliente','pareja tive','salio pareja','pareja no salio','no salio su pareja','no aparecio su pareja','pareja no figura','solo salio la pareja','solo uno salio','solo figura la pareja'] },
+    { catId:'ejecutados', idx:0, qMatch:'ejecutado', keys:['cliente ejecutado','ejecutado','ejecutados','gm inscrita','inscrito','clientes ejecutados','buscar ejecutado','ver ejecutados','lista ejecutados','clientes morosos','mora ejecutada','recuperar','recuperacion','cobranza','cobranzas','plaquear','plaqueo'] },
+    { catId:'motos_venta', idx:0, qMatch:'moto disponible', keys:['moto venta','motos venta','moto disponible','motos disponibles','vender moto','motos para venta','disponible para venta','estado registral','en calificacion','calificacion registral','comercial moto','venta vehiculo'] },
+    { catId:'costos', idx:0, qMatch:'cuesta', keys:['costo','cuanto cuesta','precio','cuanto es','cuanto cobran','tarifa','monto','cuanto pago','cuanto se paga','cuanto vale','s/120','120 soles','precio firma','costo firma','costo garantia','costo adenda','costo contrato'] },
+    { catId:'ruc', idx:0, qMatch:'ruc', keys:['ruc','razon social','global go ruc','coopac ruc','global factoring','ruc de','cual es el ruc','ruc empresa','numero ruc','datos empresa','razon social de'] },
+    { catId:'notarias', idx:0, qMatch:'quintanilla', keys:['notaria lima','quintanilla','notaria ate','notaria surquillo','notaria comas','horario lima'] },
+    { catId:'notarias', idx:1, qMatch:'canete', keys:['notaria canete','canete','camacho'] },
+    { catId:'notarias', idx:2, qMatch:'san martin', keys:['notaria san martin','lamas','tarapoto','juanjui','moyobamba'] },
+    { catId:'notarias', idx:3, qMatch:'piura', keys:['notaria piura','piura','sullana'] },
+    { catId:'notarias', idx:4, qMatch:'ica', keys:['notaria ica','ica','chincha'] },
+    { catId:'notarias', idx:5, qMatch:'trujillo', keys:['notaria trujillo','trujillo','casa grande','laredo','la libertad'] },
+    { catId:'notarias', idx:6, qMatch:'chiclayo', keys:['notaria chiclayo','chiclayo','lambayeque','ferrenafe','ferrañafe'] },
+    { catId:'notarias', idx:7, qMatch:'cajamarca', keys:['notaria cajamarca','cajamarca'] },
+    { catId:'notarias', idx:8, qMatch:'pucallpa', keys:['notaria pucallpa','pucallpa','ucayali'] },
+    { catId:'notarias', idx:9, qMatch:'iquitos', keys:['notaria iquitos','iquitos','loreto'] },
+    { catId:'notarias', idx:10, qMatch:'puerto maldonado', keys:['notaria puerto maldonado','puerto maldonado','madre de dios','pantigoso'] },
+    { catId:'notarias', idx:11, qMatch:'huacho', keys:['notaria huacho','huacho','huaral'] },
+    { catId:'notarias', idx:12, qMatch:'chimbote', keys:['notaria chimbote','chimbote'] },
+    { catId:'notarias', idx:13, qMatch:'huanuco', keys:['notaria huanuco','huanuco'] },
+    { catId:'notarias', idx:14, qMatch:'jaen', keys:['notaria jaen','jaen'] },
+    { catId:'notarias', idx:15, qMatch:'ayacucho', keys:['notaria ayacucho','ayacucho'] },
+    { catId:'notarias', idx:16, qMatch:'huancayo', keys:['notaria huancayo','huancayo','la merced','tarma','jauja','junin'] },
+    { catId:'notarias', idx:17, qMatch:'huaraz', keys:['notaria huaraz','huaraz'] },
+    { catId:'notarias', idx:18, qMatch:'arequipa', keys:['notaria arequipa','arequipa'] },
+    { catId:'notarias', idx:19, qMatch:'bagua', keys:['notaria bagua','bagua'] },
+  ];
+
+  let best = null;
+  let bestScore = 0;
+
+  RULES.forEach(rule => {
+    rule.keys.forEach(k => {
+      if (q.includes(k)) {
+        const score = k.length;
+        if (score > bestScore) {
+          bestScore = score;
+          best = rule;
+        }
+      }
+    });
+  });
+
+  if (best) {
+    const resolved = resolveItem(best.catId, best.idx, best.qMatch);
+    const cat = resolved.cat;
+    const item = resolved.item;
+    const bestIdx = resolved.idx;
+
+    // Si no se encontró la categoría o el item, caer al buscador dinámico
+    if (!cat || !item) {
+      const dynResult = dynamicSearch(q);
+      if (dynResult) {
+        resp.innerHTML = `<p>¡Encontré un apartado que puede ayudarte!</p>
+          <div class="ai-suggestion" onclick="hist=['home','area:${dynResult.cat.area || 'legal'}']; window.currentArea='${dynResult.cat.area || 'legal'}'; openAnswer('${dynResult.catId}', ${dynResult.idx})">
+            ${dynResult.cat.icon} ${dynResult.cat.title} → ${dynResult.item.q}
+          </div>`;
+      } else {
+        resp.innerHTML = `<p>No encontré un apartado exacto para esa consulta. Prueba navegando por las categorías.</p>`;
+      }
+      input.value = '';
+      return;
+    }
+
+    // CONTRATO/FIRMA: distinguir qué tipo de problema con firma
+    if (best.catId === 'contrato') {
+      const qOrig = raw.toLowerCase();
+      const mencionaDNI = ['dni','vencido','roto','deteriorado','perdido','extraviado','documento','carnet','ce','identidad'].some(k => qOrig.includes(k));
+      const mencionaGarantia = ['garantia','garantía','gm','notaria','notaría','provincia','testigo','discapacidad'].some(k => qOrig.includes(k));
+      const mencionaDigital = ['firmalo','keynua','plataforma','digital','app','link','electronica','aplicativo'].some(k => qOrig.includes(k));
+      const mencionaDesistir = ['desistir','cancelar','anular','arrepint','devolver','salirse','ya no quiere','50%','inicial'].some(k => qOrig.includes(k));
+      const mencionaGoTrack = ['go track','gotrack','seguimiento','rastrear','rastreo','solicitud','estado'].some(k => qOrig.includes(k));
+
+      if (mencionaDNI) {
+        // Ir directo a DNI — mostrar botones contrato vs garantía
+        const dniResolved = resolveItem('dni', 0, 'vencido');
+        if (dniResolved.cat) {
+          resp.innerHTML = `<p>Parece un problema con el documento del cliente. ¿Qué necesita firmar?</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+              <button class="etapa-btn" onclick="setEtapa('contrato', 'dni', ${dniResolved.idx})">📄 Firma de contrato</button>
+              <button class="etapa-btn" onclick="setEtapa('gm_sin_tive', 'dni', ${dniResolved.idx})">🔏 Firma de garantía</button>
+            </div>`;
+          input.value = ''; return;
+        }
+      } else if (mencionaGarantia) {
+        const notItem = resolveItem('notarias', 0, 'no validar');
+        if (notItem.item) {
+          resp.innerHTML = `<p>¡Encontré el apartado para tu consulta!</p>
+            <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('notarias', ${notItem.idx})">
+              🏛️ Notarías Aliadas → ${notItem.item.q}
+            </div>`;
+          input.value = ''; return;
+        }
+      } else if (mencionaDigital) {
+        resp.innerHTML = `<p>¡Encontré el apartado para tu consulta!</p>
+          <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('${best.catId}', ${bestIdx})">
+            ${cat.icon} ${cat.title} → ${item.q}
+          </div>`;
+        input.value = ''; return;
+      } else if (mencionaDesistir) {
+        const desItem = resolveItem('contrato', 1, 'desistir');
+        if (desItem.item) {
+          resp.innerHTML = `<p>¡Encontré el apartado para tu consulta!</p>
+            <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('${best.catId}', ${desItem.idx})">
+              ${cat.icon} ${cat.title} → ${desItem.item.q}
+            </div>`;
+          input.value = ''; return;
+        }
+      } else if (mencionaGoTrack) {
+        const gtItem = resolveItem('contrato', 0, 'go track');
+        if (gtItem.item) {
+          resp.innerHTML = `<p>¡Encontré el apartado para tu consulta!</p>
+            <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('${best.catId}', ${gtItem.idx})">
+              ${cat.icon} ${cat.title} → ${gtItem.item.q}
+            </div>`;
+          input.value = ''; return;
+        }
+      }
+      // Si no mencionó nada específico → mostrar opciones
+      resp.innerHTML = `<p>Hay varias razones por las que un cliente no puede firmar. ¿Cuál es el caso?</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+          <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('dni')">🪪 Problema con su DNI o CE (vencido, roto, perdido)</button>
+          <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('${best.catId}', ${bestIdx})">💻 No puede firmar por Firmalo.pe / Keynua</button>
+          <button class="etapa-btn" onclick="var ni=resolveItem('notarias',0,'no validar'); if(ni.item) openAnswer('notarias',ni.idx)">🏛️ No validaron su firma en notaría</button>
+        </div>`;
+
+    // DNI: detectar si ya menciono contrato o garantia en la pregunta
+    } else if (best.catId === 'dni') {
+      const qOrig = document.getElementById('ai-input').value.toLowerCase();
+      const mencionaGarantia = ['garantia','garantía','gm','garantia mobiliaria'].some(k => qOrig.includes(k));
+      const mencionaContrato = ['contrato','firmar contrato'].some(k => qOrig.includes(k));
+      if (mencionaGarantia) {
+        setEtapa('gm_sin_tive', best.catId, bestIdx);
+        return;
+      } else if (mencionaContrato) {
+        setEtapa('contrato', best.catId, bestIdx);
+        return;
+      }
+      resp.innerHTML = `<p>Entendido! ¿Qué documento necesita firmar?</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+          <button class="etapa-btn" onclick="setEtapa('contrato', '${best.catId}', ${bestIdx})">📄 Para firmar el contrato</button>
+          <button class="etapa-btn" onclick="setEtapa('gm_sin_tive', '${best.catId}', ${bestIdx})">🔏 Para firmar la garantía</button>
+        </div>`;
+    // PAREJA ambigua: preguntar si son casados o convivientes/novios
+    } else if (best.catId === '_pareja') {
+      resp.innerHTML = `<p>Para darte la respuesta correcta, necesito saber:</p>
+        <p style="font-size:12px;color:var(--text2);margin:10px 0 8px;">¿Cuál es el estado civil de la pareja?</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button class="etapa-btn" onclick="handleParejaEstadoCivil('casados')">💍 Son casados</button>
+          <button class="etapa-btn" onclick="handleParejaEstadoCivil('convivientes')">👫 Son convivientes / novios / solteros</button>
+        </div>`;
+    // TIVE: nunca dirigir a un item específico — siempre preguntar etapa
+    } else if (best.catId === 'tive') {
+      resp.innerHTML = `<p>Entendido! ¿El cliente ya firmó su garantía mobiliaria?</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+          <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('tive')">✅ Sí, ya firmó garantía</button>
+          <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('agregar')">❌ No, aún no firma garantía</button>
+        </div>`;
+    // AGREGAR/QUITAR: generalmente es antes de la firma de garantía
+    } else if (best.catId === 'agregar') {
+      resp.innerHTML = `<p>Entendido! Te llevo al apartado de agregar o quitar a alguien del crédito.</p>
+        <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('agregar')">
+          📋 Agregar o quitar a alguien del crédito
+        </div>`;
+    // CRONOGRAMA y otros: preguntar etapa general
+    } else if (['cronograma','cambio'].includes(best.catId)) {
+      resp.innerHTML = `<p>Entendido! Antes de mostrarte el apartado, dime:</p>
+        <p style="font-size:12px;color:var(--text2);margin:10px 0 8px;">¿En qué etapa está el proceso?</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button class="etapa-btn" onclick="setEtapa('ninguna', '${best.catId}', ${bestIdx})">📋 Aún no firma nada</button>
+          <button class="etapa-btn" onclick="setEtapa('contrato', '${best.catId}', ${bestIdx})">📄 Solo firmó contrato</button>
+          <button class="etapa-btn" onclick="setEtapa('gm_sin_tive', '${best.catId}', ${bestIdx})">🔏 Firmó garantía sin TIVE (provincia)</button>
+          <button class="etapa-btn" onclick="setEtapa('gm_con_tive', '${best.catId}', ${bestIdx})">🚗 Firmó garantía con TIVE (Lima)</button>
+        </div>`;
+    } else {
+      resp.innerHTML = `<p>¡Encontré el apartado para tu consulta!</p>
+        <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('${best.catId}', ${bestIdx})">
+          ${cat.icon} ${cat.title} → ${item.q}
+        </div>`;
+    }
+  } else {
+    // Fallback: búsqueda dinámica en todos los items
+    const dynResult = dynamicSearch(q);
+    if (dynResult) {
+      // Si encontró algo de TIVE → mostrar botones de etapa, no item específico
+      if (dynResult.catId === 'tive') {
+        resp.innerHTML = `<p>Parece una consulta sobre TIVE observada. ¿El cliente ya firmó su garantía mobiliaria?</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+            <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('tive')">✅ Sí, ya firmó garantía</button>
+            <button class="etapa-btn" onclick="hist=['home','area:legal']; window.currentArea='legal'; openCategory('agregar')">❌ No, aún no firma garantía</button>
+          </div>`;
+      } else {
+        resp.innerHTML = `<p>¡Encontré un apartado que puede ayudarte!</p>
+          <div class="ai-suggestion" onclick="hist=['home','area:${dynResult.cat.area || 'legal'}']; window.currentArea='${dynResult.cat.area || 'legal'}'; openAnswer('${dynResult.catId}', ${dynResult.idx})">
+            ${dynResult.cat.icon} ${dynResult.cat.title} → ${dynResult.item.q}
+          </div>`;
+      }
+    } else {
+      resp.innerHTML = `<p>No encontré un apartado exacto para esa consulta. Prueba navegando por las categorías o consulta directamente con el área correspondiente.</p>`;
+    }
+  }
+  input.value = '';
+}
+
+function setEtapa(etapa, catId, idx) {
+  const cat = CATS.find(c => c.id === catId);
+  const item = cat.items[idx];
+  const resp = document.getElementById('ai-response');
+
+  // Redirigir segun etapa y categoria
+  let finalCatId = catId;
+  let finalIdx = idx;
+  let msg = '';
+
+  if (catId === 'dni') {
+    // Mensajes especificos para DNI
+    if (etapa === 'contrato') {
+      msg = '📄 Para firmar el contrato con DNI vencido, roto o perdido — revisa el apartado para ver si puede firmar digital o debe ir presencialmente:';
+    } else if (etapa === 'gm_sin_tive' || etapa === 'gm_con_tive') {
+      msg = '🔏 Para firmar la garantía mobiliaria — revisa el apartado, ahí encontrarás si se acepta el DNI en ese estado y qué hacer:';
+    }
+  } else if (etapa === 'ninguna') {
+    if (catId === 'tive') { finalCatId = 'agregar'; finalIdx = 1; }
+    msg = '📋 Aún no firmó nada — no habrá costo de nueva legalización. Aquí están los pasos a seguir:';
+  } else if (etapa === 'contrato') {
+    if (catId === 'tive') { finalCatId = 'agregar'; finalIdx = 1; }
+    msg = '📄 Solo firmó contrato — no se requiere nueva legalización de garantía, solo adenda si corresponde. Aquí están los pasos:';
+  } else if (etapa === 'gm_sin_tive') {
+    msg = '🔏 Firmó garantía sin TIVE (provincia) — si se requiere corrección, habrá costo de nueva legalización. Aquí están los pasos y costos:';
+  } else if (etapa === 'gm_con_tive') {
+    msg = '🚗 Firmó garantía con TIVE (Lima) — si se requiere corrección, habrá costo de nueva legalización. Aquí están los pasos y costos:';
+  }
+
+  const finalCat = CATS.find(c => c.id === finalCatId);
+  const finalItem = finalCat.items[finalIdx];
+
+  resp.innerHTML = `<p>${msg}</p>
+    <div class="ai-suggestion" onclick="hist=['home','area:legal']; window.currentArea='legal'; openAnswer('${finalCatId}', ${finalIdx})">
+      ${finalCat.icon} ${finalCat.title} → ${finalItem.q}
+    </div>`;
+}
+
+// Build home
+function buildHome() {
+  var ld = document.getElementById('home-loading');
+  if (ld) ld.remove();
+  document.querySelectorAll('#screen-home > *').forEach(el => el.style.display = '');
+  const grid = document.getElementById('areas-grid');
+  grid.innerHTML = '';
+  AREAS.forEach(area => {
+    const areaCats = CATS.filter(c => c.area === area.id);
+    const totalProcs = areaCats.reduce((s,c) => s + c.items.length, 0);
+    const card = document.createElement('div');
+    card.className = 'area-card';
+    card.style.setProperty('--area-color', area.color);
+    card.innerHTML = `<div class="area-card-icon">${area.icon}</div><div class="area-card-name">${area.name}</div><div class="area-card-desc">${area.desc}</div><div class="area-card-count">${areaCats.length} categorías · ${totalProcs} procedimientos</div>`;
+    card.onclick = () => openArea(area.id);
+    grid.appendChild(card);
+  });
+}
+
+function openArea(areaId, push=true) {
+  if (push) hist.push('home');
+  const area = AREAS.find(a => a.id === areaId);
+  const areaCats = CATS.filter(c => c.area === areaId);
+  document.getElementById('area-badge').innerHTML = area.icon + ' ' + area.name;
+  document.getElementById('area-section-title').textContent = 'Categorías — ' + area.name;
+  const grid = document.getElementById('area-categories-grid');
+  grid.innerHTML = '';
+  areaCats.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'category-card';
+    card.style.setProperty('--card-color', cat.color);
+    card.innerHTML = `<div class="category-icon">${cat.icon}</div><div class="category-title">${cat.title}</div><div class="category-count">${cat.items.length} procedimiento${cat.items.length!==1?'s':''}</div>`;
+    card.onclick = () => openCategory(cat.id);
+    grid.appendChild(card);
+  });
+  showScreen('area');
+  window.currentArea = areaId;
+}
+
+// Mostrar loading inicial, el API llamará buildHome() cuando termine
+document.querySelectorAll('#screen-home > *').forEach(el => el.style.display = 'none');
+var _loadingDiv = document.createElement('div');
+_loadingDiv.id = 'home-loading';
+_loadingDiv.style.cssText = 'text-align:center;padding:60px 20px;color:#6b7280;';
+_loadingDiv.innerHTML = '<div class="loading-spinner" style="margin:0 auto 16px;"></div><p>Cargando procedimientos...</p>';
+document.getElementById('screen-home').appendChild(_loadingDiv);
+showScreen('home');
+// Fallback: si en 6 segundos el API no respondió, mostrar datos hardcodeados
+setTimeout(function() {
+  if (!window._apiBuildDone) { buildHome(); }
+}, 6000);
+</script>
+</body>
+</html>
